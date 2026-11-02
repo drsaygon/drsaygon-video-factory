@@ -1,0 +1,31 @@
+DRSAYGON VIDEO FACTORY 6.0.1
+EXPORT STUDIO + RELIABILITY RELEASE
+
+1. INTERFACE DE SAÍDA REFEITA
+- Master para Premiere e Arquivo para publicar agora são cartões independentes.
+- Cada saída possui seu próprio switch.
+- O seletor do Master mostra somente opções de Master.
+- O seletor de publicação mostra somente destinos de publicação.
+- Ao desligar uma saída, somente os controles daquela saída são desabilitados.
+- O sistema impede uma configuração com as duas saídas desligadas.
+- Layout responsivo sem o texto espremido/vertical da v6.0.0.
+
+2. MASTER COM DOIS NÍVEIS
+- Master HQ: ~50 Mb/s em 30 fps / ~70 Mb/s em 60 fps.
+- Master Máxima: ~80 Mb/s em 30 fps / ~100 Mb/s em 60 fps.
+- H.264 High + AAC 384 kb/s / 48 kHz.
+
+3. PUBLICAÇÃO INDEPENDENTE
+- YouTube 1080p HQ: ~12/18 Mb/s + AAC 384 kb/s.
+- Redes sociais 1080p HQ: ~10/14 Mb/s + AAC 256 kb/s.
+- Não existe mais a opção ambígua “Sem segunda saída”.
+
+4. CORREÇÕES DE CONFIABILIDADE
+- Projetos antigos com delivery_profile=none são migrados automaticamente.
+- Alterar a configuração de saída arquiva Master E arquivo de publicação juntos.
+- Um Master antigo não pode permanecer aparecendo como atual após uma mudança de perfil.
+- Projetos que geram somente Master também são reconhecidos como concluídos.
+- A prévia usa a saída de publicação quando existe; caso contrário usa o Master.
+
+5. RELEASE GATE 6.0.1
+16 testes funcionais e de regressão, incluindo teste real da interface em Chromium.

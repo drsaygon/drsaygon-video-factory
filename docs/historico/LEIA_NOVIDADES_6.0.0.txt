@@ -1,0 +1,47 @@
+DRSAYGON VIDEO FACTORY 6.0.0
+==============================
+
+FOCO DA VERSAO: CONTEUDO PRIMEIRO, EDICAO CALMA, AUDIO-AWARE E MASTER HQ.
+
+1. GRAVACAO MANUAL SEM CORTE DE VOZ
+- Removido qualquer silenceremove das narracoes manuais.
+- O arquivo capturado e preservado integralmente.
+- A interface grava antes de exibir "FALE AGORA" (pre-roll).
+- Ao clicar Parar, grava um pequeno pos-roll antes de finalizar.
+- Inicio, plosivas, respiracoes e silaba final ficam protegidos.
+
+2. SCENE CONTINUITY ENGINE PARA VIDEOS LONGOS
+- Mudanca de frase nao significa mudanca de tomada.
+- Long-form automatico usa ritmo conservador (~3 cortes/min como teto do estilo demonstrativo; normalmente menos).
+- Tomadas muito curtas em excesso disparam consolidacao automatica.
+- A-B-A, replay artificial, overlaps e resets de timestamp passam por AutoRepair/Source Lane.
+- Teste sintetico: 56 batidas semanticas em 7 minutos -> 8 tomadas (1 corte/min).
+
+3. TRES MODOS DE AUDIO
+- NARRACAO: narracao principal; audio original mutado por padrao.
+- ORIGINAL: audio das filmagens e a trilha principal; Narracao e dispensada.
+- MISTO: narracao + audio original configuravel por cena.
+
+4. AUDIO POR TOMADA EM QUALQUER MODO
+Na etapa 6, cada tomada pode ser:
+- MUDO
+- AMBIENTE BAIXO
+- AUDIO ORIGINAL EM DESTAQUE
+Mesmo em projeto narrado, o usuario pode habilitar o som original de uma cena. Em FEATURE, a narracao e automaticamente reduzida naquele trecho.
+
+5. CANAL INFANTIL / VLOG / EVENTOS
+O modo AUDIO ORIGINAL foi pensado para cenas em que a fala espontanea e o proprio conteudo. O app nao exige voz sintetica nem re-recorta por frase.
+
+6. MASTER + ARQUIVO DE ENTREGA
+- MASTER_DRSAYGON_VIDEO_FACTORY.mp4: H.264 High ~50 Mb/s (<=30 fps) / ~70 Mb/s (>30 fps), AAC 384 kb/s.
+- YouTube 1080p HQ: ~12/18 Mb/s, AAC 384 kb/s.
+- Social 1080p HQ: ~10/14 Mb/s, AAC 256 kb/s.
+
+7. METADADOS DE APLICATIVO
+Os MP4s recebem tags ffprobe-visiveis com DrSaygon Video Factory (software, writing_application, encoded_by, tool, handler/encoder de stream quando permitido).
+Observacao: YouTube pode ignorar essas tags ou usar outras heuristicas; o app nao falsifica o identificador interno Lavf do muxer FFmpeg.
+
+8. COMPATIBILIDADE
+O atualizador pode instalar sobre a pasta historica:
+E:\DrSaygon Montador IA
+preservando projetos, voice_profiles, .env, .venv, .venv_voice e FFmpeg local.

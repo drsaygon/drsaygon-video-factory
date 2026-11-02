@@ -1,0 +1,4 @@
+# Motor de voz local DrSaygon (Kyutai Pocket TTS)
+pocket-tts==2.1.0
+fastapi>=0.115,<1
+uvicorn[standard]>=0.34,<1

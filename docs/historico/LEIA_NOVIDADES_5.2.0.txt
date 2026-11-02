@@ -1,0 +1,13 @@
+DrSaygon Montador IA 5.2.0 - AUTOPILOT SELF-HEALING EDITOR
+
+O que mudou:
+- Quality Guard nao devolve mais problemas de ritmo/repeticao para o usuario no modo Autopilot.
+- Source Lane mantem o relogio da mesma filmagem avancando continuamente entre blocos e evita replay de timestamps.
+- A-B-A contextual e corrigido automaticamente quando o plano sai de uma tomada forte e volta logo em seguida sem necessidade.
+- Replays explicitamente pedidos pela fala (ex.: “de novo”) deixam de ser classificados como defeito estrutural.
+- Se uma excecao estrutural residual sobreviver aos reparos deterministas, o sistema monta um rough cut e obriga o critico adversarial a avaliar o CORTE REAL.
+- Apenas ausencia de evidencia HARD realmente indispensavel pode exigir intervencao humana.
+- Smart Resume invalida sincronismos 5.1 e reconstrói somente o corte, preservando analise, roteiro, voz, fatos e evidencias.
+
+Objetivo de produto:
+Autopilot significa que continuidade, ritmo e repeticao sao problemas do editor automatico, nao tarefas do criador.

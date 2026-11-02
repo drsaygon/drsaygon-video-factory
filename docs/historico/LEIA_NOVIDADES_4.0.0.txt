@@ -1,0 +1,118 @@
+DRSAYGON MONTADOR IA 4.0.0
+DIRECTOR ENGINE — CRONOLOGIA, EVIDÊNCIA DIRIGIDA E QA GLOBAL
+=================================================================
+
+POR QUE A V4 EXISTE
+A v3 resolveu o problema de inventar timestamps e passou a catalogar evidências reais,
+mas ainda havia duas lacunas editoriais importantes:
+1. a ordem entre arquivos podia ser tratada como detalhe, mesmo quando representava a
+   sequência real do acontecimento;
+2. um fenômeno importante que escapasse da análise geral podia ficar sem evidência,
+   e o sistema não tinha uma rotina especializada para procurá-lo.
+
+A v4 transforma essas duas informações em regras de primeira classe do editor.
+
+1. DIRECTOR ENGINE: ORDEM CRONOLÓGICA EXPLÍCITA
+- A tela Projeto exibe todos os vídeos numa sequência numerada.
+- Você pode subir/descer arquivos para declarar a ordem real.
+- Há três modos:
+  * Material solto: a ordem não é imposta.
+  * Guiada: forte preferência pela progressão cronológica.
+  * Estrita: eventos críticos não podem voltar no tempo, salvo se a própria fala
+    indicar retorno/repetição/flashback.
+- O programa pode sugerir ordem pela data/hora de gravação embutida no vídeo, mas
+  nunca aplica silenciosamente: o autor confirma antes de salvar.
+- A ordem declarada recebe sequence_index e acompanha cada evidência até o render.
+
+2. FATOS BLOQUEADOS PELO AUTOR
+- Fatos que você sabe e a visão pode interpretar errado ficam em uma lista separada.
+- Exemplo: "3 lâmpadas LED" / "1 fluorescente espiral de 45 W".
+- Esses fatos são enviados ao roteiro, ao sincronismo e ao crítico global.
+- Uma inferência visual não pode prevalecer sobre um fato explicitamente confirmado
+  pelo autor.
+
+3. EVIDENCE LAB: BUSCA DIRIGIDA
+- Se a análise geral não encontrar algo decisivo (faixa, banding, flicker, plugue,
+  clique, mudança de LED, etc.), a v4 faz uma busca específica.
+- Os vídeos mais prováveis são quebrados em janelas pequenas e sobrepostas.
+- O microclipe é desacelerado antes da verificação para evidenciar ações rápidas.
+- Para alvos de faixa/banding/flicker existe um detector local CPU-only que procura
+  anomalias de luminância por linha e propõe hotspots. Ele NÃO declara verdade;
+  apenas sugere timestamps para um verificador multimodal adversarial.
+- Só candidatos confirmados passam para o catálogo.
+
+4. RESGATE AUTOMÁTICO DURANTE O SINCRONISMO
+- Se uma fala crítica não encontrar evidência na análise ampla, o Director Engine
+  chama automaticamente a busca dirigida em vez de escolher um b-roll genérico.
+- Se ainda não houver prova, o beat permanece bloqueado.
+
+5. MARCAÇÃO MANUAL DE EVIDÊNCIA
+- O Evidence Lab permite abrir o vídeo, posicionar o player, marcar início/fim e
+  registrar um fenômeno, ação ou estado.
+- Evidência confirmada pelo autor recebe confiança máxima e prioridade editorial.
+- Isso é human-in-the-loop profissional, não um fallback aleatório.
+
+6. SINCRONISMO POR BATIDAS + CRONOLOGIA
+- A narração final é quebrada em pequenas batidas.
+- Cada batida crítica precisa mostrar a ação/estado/fenômeno compatível.
+- O motor favorece continuidade de uma boa tomada longa para trechos não críticos,
+  evitando cortes gratuitos.
+- Eventos críticos respeitam a ordem declarada do material.
+
+7. VERIFICADOR ADVERSARIAL POR MICROCLIPE
+- Cada evento crítico é reenviado como microclipe para um segundo julgamento.
+- O verificador tenta rejeitar cenas onde existe apenas o produto/ambiente correto,
+  mas não a ação ou fenômeno citado.
+- Quando possível, ele devolve o instante exato do evento e o recorte final é
+  recentralizado para que a mudança visual aconteça junto da frase.
+
+8. ROUGH CUT QA GLOBAL — O CRÍTICO VÊ O VÍDEO MONTADO
+- Antes do render final, a v4 cria um rascunho leve com a narração real.
+- Um crítico independente assiste ao CORTE montado e tenta reprová-lo por:
+  * cena errada na frase;
+  * ação cedo/tarde;
+  * estado causal incorreto;
+  * fenômeno ausente;
+  * cronologia quebrada;
+  * enquadramento vertical escondendo a evidência;
+  * troca/repetição de cena sem necessidade.
+- Shorts são analisados inteiros; vídeos longos são revisados em blocos para manter
+  custo e tamanho de contexto controlados.
+- Se houver erro crítico, a montagem em alta resolução é bloqueada.
+
+9. ESCALA PARA VÍDEO LONGO
+O pipeline de QA é chunked. Um vídeo de 10 minutos não é enviado como uma única
+solicitação gigante: o rascunho é dividido em janelas de aproximadamente 75 s,
+mantendo timestamps globais e batidas correspondentes. Isso permite usar o mesmo
+motor em Shorts e vídeos longos sem abandonar o gate editorial.
+
+10. INTERFACE / BUGS CONSOLIDADOS
+- sem exclusiveMinimum no schema Gemini;
+- proxies ASCII para nomes com acento;
+- polling serial sem reload destrutivo;
+- players não são reconstruídos durante reprodução;
+- progresso de geração de voz dentro do próprio bloco;
+- silêncio nas bordas da gravação manual removido;
+- launcher impede instâncias duplicadas;
+- log de voz rotacionado por sessão;
+- Evidence Inspector com timestamps;
+- versão 4.0.0 em backend/interface/diagnóstico.
+
+MIGRAÇÃO DO PROJETO ATUAL
+- NÃO apague seu projeto.
+- NÃO refaça roteiro ou narrações já aprovadas.
+- Após instalar a v4, vá à etapa Projeto e defina a ordem cronológica real.
+- Salve os fatos confirmados pelo autor.
+- O catálogo v3 existente pode ser reaproveitado: ao abrir/salvar a direção, os
+  sequence_index são atualizados. Reanálise só é necessária se você adicionar vídeos
+  ou quiser um catálogo totalmente novo.
+- Na etapa 2, use a busca dirigida somente se quiser inspecionar/provar um fenômeno
+  antes do sincronismo. Durante a etapa 6 ela também é acionada automaticamente
+  quando uma batida crítica não tiver evidência.
+- Prepare o sincronismo e só renderize se o gate global aprovar.
+
+NOTA DE QUALIDADE
+Nenhum software de IA sério pode garantir 100% de acerto em qualquer filmagem.
+A v4 foi desenhada para fazer algo mais profissional: declarar a ordem real,
+restringir escolhas a evidências existentes, procurar o que estiver faltando,
+verificar os momentos críticos e bloquear o render quando ainda houver dúvida.

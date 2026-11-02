@@ -1,0 +1,9 @@
+DRSAYGON MONTADOR IA 4.0.1 — EVIDENCE SEARCH RELIABILITY
+
+Correcoes desta versao:
+- Evidence Lab agora atualiza progresso real durante varredura e verificacao de microtrechos.
+- Removida a suposicao de que modelos 2.5 devem ser tentados antes do modelo primario.
+- Modelo que retorna 404/NOT_FOUND entra em circuit breaker e nao e tentado repetidamente.
+- Automatic Function Calling e explicitamente desabilitado nas requisicoes estruturadas sem tools.
+- Busca de banding/flicker encerra cedo quando ja possui candidatos fortes verificados.
+- Mantidos Director Engine, cronologia, fatos bloqueados, Evidence Lab e Rough Cut QA da v4.

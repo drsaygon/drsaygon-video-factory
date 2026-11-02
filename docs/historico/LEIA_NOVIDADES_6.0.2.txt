@@ -1,0 +1,26 @@
+DRSAYGON VIDEO FACTORY 6.0.2
+
+FOCO DESTA VERSAO
+- Evidence Lab com player confiavel mesmo para originais que o navegador nao decodifica.
+- Gravacao manual com corte inteligente de silencio sem amputar a primeira/ultima silaba.
+
+1. EVIDENCE LAB - PLAYER COMPATIVEL
+O player manual nao usa mais diretamente o codec do arquivo original.
+Ele usa o mesmo proxy H.264/AAC criado durante a analise, com pix_fmt yuv420p e suporte a HTTP Range/seek.
+Isso evita o caso em que FFmpeg/Gemini conseguem analisar a filmagem, mas Edge/Chrome nao conseguem reproduzir o codec original.
+A interface mostra o estado da previa e inclui atalho para os ultimos 15 segundos.
+
+2. SMART EDGE TRIM PARA GRAVACAO MANUAL
+A captura continua com pre-roll e pos-roll para proteger o primeiro ataque de voz e a silaba final.
+Depois da captura, o servidor detecta somente silencio confirmado nas BORDAS.
+- pausas internas nunca sao removidas;
+- existe margem de seguranca antes da primeira fala detectada;
+- existe margem maior depois da ultima fala detectada;
+- se a deteccao for ambigua, o audio inteiro e preservado.
+O processamento de voz existente (noise suppression do navegador + high/low-pass + loudness normalization) foi mantido.
+
+3. EVIDENCIA DE FALA / AUDIO
+A marcacao manual ganhou o tipo "Fala / audio importante". Esse tipo marca explicitamente que o audio original daquela evidencia deve ser preservado.
+
+4. RELEASE GATE
+A v6.0.2 adiciona regressao sintetica de silencio+fala e teste funcional do preview H.264/AAC com HTTP Range.

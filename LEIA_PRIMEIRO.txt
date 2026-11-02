@@ -1,0 +1,34 @@
+DRSAYGON VIDEO FACTORY 6.0.2
+==============================
+
+Comece pelo README.md e pelo historico em docs/historico/LEIA_NOVIDADES_6.0.2.txt.
+
+ATUALIZACAO DE UMA INSTALACAO EXISTENTE
+Use o atualizador v6 fornecido separadamente. Ele preserva:
+- projetos
+- gravacoes/narracoes salvas dentro dos projetos
+- voice_profiles
+- .env
+- .venv
+- .venv_voice
+
+INSTALACAO NOVA
+1. Execute INSTALAR.bat.
+2. Configure a chave Gemini em CONFIGURAR_CHAVE.bat se quiser novas analises IA.
+3. O motor de voz local e opcional para projetos que usam Audio Original.
+4. Execute DIAGNOSTICO.bat.
+5. Execute INICIAR.bat.
+
+NOVO FLUXO DE AUDIO
+Ao criar ou abrir um projeto, escolha:
+- Narracao
+- Audio original das filmagens
+- Misto
+
+QUALIDADE DE SAIDA
+Por padrao a v6 pode gerar simultaneamente:
+- MASTER_DRSAYGON_VIDEO_FACTORY.mp4 para Premiere
+- CONTEUDO_PRINCIPAL.mp4 otimizado para publicacao
+
+IMPORTANTE SOBRE NARRACOES ANTIGAS
+Arquivos que ja foram gravados e cortados por uma versao anterior nao podem recuperar o audio que foi removido. A v6 impede novos cortes automaticos de borda. Regrave somente os blocos antigos cujo inicio/fim ja esteja comprometido.

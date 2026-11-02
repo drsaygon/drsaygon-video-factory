@@ -1,0 +1,75 @@
+DRSAYGON MONTADOR IA 3.0.0
+PROFESSIONAL EVIDENCE ENGINE
+========================================
+
+POR QUE ESTA VERSAO EXISTE
+A montagem v2 associava uma lista de cenas a cada bloco e consumia essa lista
+sequencialmente ate preencher a duracao da narracao. Isso podia colocar o estado
+errado sob uma frase, perder uma acao curta (plugue/tomada/botao) ou deixar de usar
+uma filmagem importante.
+
+A v3 muda a arquitetura, nao apenas o prompt.
+
+NOVO PIPELINE DE EDICAO
+1. ANALISE DE EVIDENCIAS
+   - proxies internos com nomes ASCII seguros;
+   - amostragem temporal mais alta para acoes rapidas;
+   - cada evento visual recebe event_id;
+   - antes/durante/depois sao separados;
+   - acoes, estados e fenomenos visuais sao catalogados explicitamente.
+
+2. NARRACAO FINAL PRIMEIRO
+   - o sincronismo so e fechado depois da voz aprovada/manual existir;
+   - o audio real e alinhado ao texto para localizar as frases no tempo;
+   - o video nao usa mais apenas estimativa pelo tamanho do texto.
+
+3. CASAMENTO RESTRITO
+   - o Gemini so pode escolher event_id que realmente existem no catalogo;
+   - ele nao pode inventar arquivo ou timestamp;
+   - falas de acao precisam de cenas de acao, nao apenas b-roll do produto.
+
+4. VERIFICADOR ADVERSARIAL
+   - acoes/fenomenos criticos sao reenviados como microclipes;
+   - um segundo passe tenta REJEITAR o casamento incorreto;
+   - se a evidencia nao for confirmada, a montagem fica bloqueada.
+
+5. MAPA DE SINCRONISMO EDITAVEL
+   - antes de renderizar, a etapa 6 mostra cada batida de narracao;
+   - mostra arquivo, intervalo, evidencia e confianca;
+   - permite assistir a previa exata;
+   - permite trocar manualmente uma tomada sem refazer o projeto.
+
+6. MONTAGEM FAIL-CLOSED
+   - nao existe mais "cena aleatoria de seguranca";
+   - nao repete/estica acao curta para esconder falta de imagem;
+   - somente o mapa aprovado alimenta o FFmpeg.
+
+BUGS/QUALIDADE CORRIGIDOS E CONSOLIDADOS
+- schema Gemini sem exclusiveMinimum;
+- nomes com acento nao quebram upload (proxy interno ASCII);
+- respostas da analise forçadas a PT-BR;
+- polling serial: roteiro/player nao recarregam loucamente;
+- progresso de Gerar/regerar voz aparece dentro do bloco clicado;
+- gravacao manual remove somente silencio das bordas;
+- versionamento da interface vem do backend (3.0.0);
+- launcher nao cria servidores duplicados nas portas 8765/8766;
+- voice_engine.log e renovado por sessao e o anterior e preservado;
+- TTS local usa blocos de prosodia maiores e pausas menos artificiais;
+- resultados antigos sao preservados em 05_RESULTADO\HISTORICO quando ficam obsoletos.
+
+MIGRACAO DO SEU PROJETO ATUAL
+Seu roteiro e suas gravacoes aprovadas NAO precisam ser refeitos.
+Depois de instalar esta versao:
+1. execute DIAGNOSTICO.bat;
+2. abra o mesmo projeto;
+3. execute novamente SOMENTE a etapa 2. Analise, para criar o catalogo de evidencias v3;
+4. va para 6. Sincronismo & Montagem;
+5. prepare o sincronismo profissional;
+6. revise as previas/gate;
+7. somente depois monte o MP4.
+
+IMPORTANTE
+Nenhum sistema de IA pode prometer acerto editorial absoluto. A v3 foi desenhada
+para ser auditavel e, em pontos criticos, bloquear em vez de adivinhar. Isso e muito
+mais proximo de um fluxo profissional e tambem e a base correta para evoluir o
+Montador para um produto Windows comercial.

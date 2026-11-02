@@ -1,0 +1,10 @@
+DrSaygon Montador IA v5.3.0 — Publication Studio
+
+- Preview do CONTEUDO_PRINCIPAL.mp4 diretamente na aba 7. Publicacao.
+- Pesquisa web grounded com Google Search antes de escrever descricao; prioridade para fontes oficiais do fabricante.
+- Descricao longa e informativa, sem inventar especificacoes quando a pesquisa nao comprovar.
+- Titulo de Short termina em #shorts, respeita 100 caracteres e seleciona a alternativa mais forte por cobertura de produto + uso inteligente do limite.
+- Exatamente 25 tags unicas no pacote final; o modelo gera um pool maior e o aplicativo seleciona as mais fortes.
+- Contadores de caracteres/tags e fontes pesquisadas na interface.
+- Extras (alternativas de titulo/thumbnail) recolhidos para manter a tela principal limpa.
+- Nenhuma mudanca no motor de montagem v5.2: esta versao foca somente em Publicacao/GUI.

@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DrSaygon Video Factory 6</title>
+  <link rel="stylesheet" href="/static/styles.css?v=6.0.2">
+</head>
+<body>
+<header class="topbar">
+  <div>
+    <div class="brand">DrSaygon Video Factory <span class="version" id="appVersion">6.0.2</span></div>
+    <div class="subtitle">Autopilot → continuidade → áudio original/narração → master → publicação</div>
+  </div>
+  <div id="systemBadge" class="badge">Verificando sistema...</div>
+</header>
+<main class="layout">
+  <aside class="sidebar">
+    <button class="primary full" id="newProjectButton">+ Novo projeto</button>
+    <h2>Projetos</h2>
+    <div id="projectList" class="project-list"></div>
+  </aside>
+  <section class="content">
+    <section id="welcomeView" class="panel hero">
+      <span class="eyebrow">AUTOMAÇÃO LOCAL + IA</span>
+      <h1>Você filma. O Video Factory monta, preserva o áudio e entrega o master.</h1>
+      <p>Crie vídeos 16:9 ou Shorts 9:16, deixe a IA compreender suas tomadas, aprove o roteiro, use narração ou o áudio original das filmagens e receba um master de alta qualidade pronto para o Premiere.</p>
+      <div class="feature-grid">
+        <div><strong>16:9</strong><span>Vídeos normais em 1080p</span></div>
+        <div><strong>9:16</strong><span>Shorts de 30 a 120 s</span></div>
+        <div><strong>Áudio flexível</strong><span>Original, narração ou misto</span></div>
+        <div><strong>Revisável</strong><span>Você aprova cada fala</span></div>
+      </div>
+    </section>
+
+    <section id="projectView" class="hidden">
+      <div class="project-header panel">
+        <div>
+          <div class="project-format" id="projectFormatBadge"></div>
+          <h1 id="projectTitle"></h1>
+          <p id="projectProduct"></p>
+        </div>
+        <button id="openRootButton" class="secondary">Abrir pasta do projeto</button>
+      </div>
+
+      <nav class="tabs">
+        <button class="tab active" data-tab="prepare">1. Projeto</button>
+        <button class="tab" data-tab="analyze">2. Análise</button>
+        <button class="tab" data-tab="script">3. Roteiro</button>
+        <button class="tab" data-tab="voiceprofile">4. Minha voz</button>
+        <button class="tab" data-tab="narration">5. Narração</button>
+        <button class="tab" data-tab="assemble">6. Sincronismo &amp; Montagem</button>
+        <button class="tab" data-tab="publication">7. Publicação</button>
+      </nav>
+
+      <section id="tab-prepare" class="tab-panel panel">
+        <h2>Projeto e materiais</h2>
+        <div class="autopilot-card autopilot-v5">
+          <div class="autopilot-copy"><span class="eyebrow">DRSAYGON VIDEO FACTORY 6 · AUDIO-AWARE AUTOPILOT</span><h3>Do material bruto ao vídeo pronto em poucos cliques</h3><p>Escolha narração, áudio original ou modo misto. O motor preserva tomadas longas, fala e som de câmera quando fazem parte do conteúdo, reduz microcortes em vídeos longos e gera Master HQ + arquivo de publicação.</p></div>
+          <div class="autopilot-controls">
+            <label><b>Modo de trabalho</b><select id="workflowMode"><option value="autopilot">✨ Autopilot — pronto para publicar</option><option value="quick_review">✓ Revisão rápida — para antes do render</option><option value="director">🎬 Director — controle detalhado</option></select></label>
+            <button id="autopilotButton" class="primary large">✨ Montar automaticamente</button>
+          </div>
+        </div>
+        <div class="autopilot-note"><b>Smart Resume + Auto-Recovery:</b> etapas válidas são reaproveitadas. O Autopilot não exige “prova literal” para frases explicativas e só pede ajuda quando falta uma ação ou fenômeno realmente indispensável.</div>
+        <div class="project-audio-card">
+          <div><span class="eyebrow">ESTRATÉGIA DE ÁUDIO</span><h3>Como este projeto deve soar?</h3><p>Escolha uma política global. Na etapa 6 você ainda pode alterar o áudio de cada tomada individualmente.</p></div>
+          <label><b>Áudio do projeto</b><select id="projectAudioMode"><option value="narration">Narração principal · áudio original mutado</option><option value="original">Áudio original das filmagens · sem narração obrigatória</option><option value="mixed">Misto · narração + áudio original por cena</option></select></label>
+          <button id="saveProjectAudioButton" class="secondary">Salvar áudio do projeto</button>
+        </div>
+        <div id="autopilotProgress" class="progress-card"></div>
+        <div class="two-columns">
+          <div class="action-card">
+            <h3>Filmagens originais</h3>
+            <p>Copie tudo para <b>01_FILMAGENS</b>. O programa nunca altera os originais.</p>
+            <button id="openFootageButton" class="primary">Abrir 01_FILMAGENS</button>
+            <div id="footageList" class="file-list"></div>
+          </div>
+          <div class="action-card">
+            <h3>O que só você sabe</h3>
+            <p>Registre opiniões, resultados de testes, links e fatos pessoais. PDFs/manuais podem ser colocados em <b>02_INFORMACOES</b>.</p>
+            <textarea id="notesText" rows="16" placeholder="Ex.: gostei do acabamento; não medi a autonomia; quero enfatizar o ruído...\n"></textarea>
+            <div class="button-row">
+              <button id="saveNotesButton" class="primary">Salvar observações</button>
+              <button id="openInfoButton" class="secondary">Abrir 02_INFORMACOES</button>
+            </div>
+          </div>
+        </div>
+        <details id="directorAdvanced" class="advanced-panel">
+          <summary>Opções avançadas — Director Engine, cronologia e fatos bloqueados</summary>
+          <div class="director-card">
+          <div class="director-card-head"><div><span class="eyebrow">DIRECTOR ENGINE</span><h3>Ordem cronológica + fatos bloqueados</h3><p>Não deixe a IA adivinhar a sequência. Defina a ordem real das filmagens e os fatos que nenhuma análise visual pode contradizer.</p></div><button id="saveKnowledgeButton" class="primary">Salvar direção</button></div>
+          <div class="two-columns">
+            <div>
+              <label><b>Estilo de edição</b></label>
+              <select id="editingStyle"><option value="auto" selected>Automático — inferir pelo material</option><option value="demonstrative">Demonstrativo — tomadas longas</option><option value="balanced">Equilibrado</option><option value="dynamic">Dinâmico — mais cortes quando fizer sentido</option></select>
+              <label><b>Como tratar a cronologia</b></label>
+              <select id="chronologyMode"><option value="off">Material solto — não impor ordem</option><option value="guided" selected>Guiada — forte preferência cronológica</option><option value="strict">Estrita — eventos críticos não voltam no tempo</option></select>
+              <div class="button-row compact-row"><button id="suggestChronologyButton" class="secondary">Sugerir pela data de gravação</button><span id="chronologySuggestionStatus" class="subtitle"></span></div>
+              <div id="footageOrder" class="footage-order"></div>
+              <textarea id="chronologyNotes" rows="4" placeholder="Ex.: primeiro ligo o conjunto; depois retiro a alimentação; por fim mostro o efeito nas lâmpadas."></textarea>
+            </div>
+            <div>
+              <label><b>Fatos confirmados pelo autor</b></label>
+              <p class="subtitle">Um fato por linha. Estes fatos têm prioridade sobre inferências incertas da visão.</p>
+              <textarea id="lockedFacts" rows="12" placeholder="3 lâmpadas LED
+1 lâmpada fluorescente espiral de 45 W"></textarea>
+            </div>
+          </div>
+        </div>
+        </details>
+      </section>
+
+      <section id="tab-analyze" class="tab-panel panel hidden">
+        <h2>A IA assiste às filmagens — modo Evidência</h2>
+        <p>O v6 combina análise temporal de imagem e áudio, Timeline Resolver, fatos confirmados e evidências verificáveis. Cada trecho recebe um ID real; ações/fenômenos críticos podem ser procurados novamente em microclipes antes do sincronismo — a montagem não pode inventar uma tomada.</p>
+        <div id="analysisModeNotice" class="notice"></div>
+        <button id="analyzeButton" class="primary large">Analisar filmagens</button>
+        <div id="analysisProgress" class="progress-card"></div>
+        <div id="catalogSummary"></div>
+        <details id="evidenceLabAdvanced" class="advanced-panel">
+          <summary>Opções avançadas — Evidence Lab</summary>
+          <div class="director-card evidence-lab">
+          <span class="eyebrow">EVIDENCE LAB</span><h3>Busca dirigida e marcação manual</h3>
+          <p>Quando um fenômeno importante não aparece na análise geral, descreva exatamente o que precisa ser encontrado. O Video Factory usa este laboratório somente como recurso de exceção: desacelera microclipes, faz varredura especializada e exige confirmação antes de promover a evidência.</p>
+          <div class="button-row search-row"><input id="evidenceTarget" type="text" placeholder="Ex.: faixa escura / banding visível atravessando a imagem durante a comutação"><button id="searchEvidenceButton" class="primary">Buscar evidência específica</button></div>
+          <div id="evidenceSearchProgress" class="progress-card"></div>
+          <div id="directedEvidenceResults"></div>
+          <details class="manual-evidence-lab"><summary>Marcar evidência manualmente — precisão absoluta</summary>
+            <div class="two-columns">
+              <div><select id="manualEvidenceFile"></select><video id="manualEvidencePlayer" controls playsinline preload="metadata"></video><div class="player-helper-row"><div id="manualEvidencePlayerStatus" class="player-status">Selecione uma filmagem para preparar a prévia compatível.</div><button id="manualEvidenceLast15" type="button" class="secondary compact">Ir para os últimos 15 s</button></div></div>
+              <div>
+                <label>Descrição da evidência</label><input id="manualEvidenceLabel" type="text" placeholder="faixa escura / banding visível">
+                <div class="manual-evidence-options"><label>Tipo <select id="manualEvidenceKind"><option value="phenomenon" selected>Fenômeno visual</option><option value="action">Ação física</option><option value="speech">Fala / áudio importante</option><option value="state">Estado</option><option value="detail">Detalhe</option><option value="demo">Demonstração</option></select></label><label class="check-label"><input id="manualEvidenceCritical" type="checkbox" checked> Sincronia crítica</label></div>
+                <div class="manual-times"><label>Início <input id="manualEvidenceStart" type="number" min="0" step="0.01" value="0"></label><button id="markEvidenceStart" class="secondary">Usar tempo atual</button></div>
+                <div class="manual-times"><label>Fim <input id="manualEvidenceEnd" type="number" min="0" step="0.01" value="1"></label><button id="markEvidenceEnd" class="secondary">Usar tempo atual</button></div>
+                <button id="saveManualEvidence" class="primary">Confirmar evidência neste intervalo</button>
+              </div>
+            </div>
+          </details>
+        </div>
+        </details>
+      </section>
+
+      <section id="tab-script" class="tab-panel panel hidden">
+        <h2>Roteiro + intenção visual</h2>
+        <p>O roteiro sugere tomadas, mas o vínculo final só é decidido depois que a narração estiver pronta. Na etapa 6, o Evidence Engine sincroniza cada pequena frase com eventos visuais comprovados e verifica os momentos críticos.</p>
+        <div class="button-row">
+          <button id="generateScriptButton" class="primary large">Gerar roteiro inteligente</button>
+          <button id="savePlanButton" class="secondary">Salvar alterações</button>
+        </div>
+        <div id="scriptProgress" class="progress-card"></div>
+        <div id="scriptBlocks" class="script-blocks"></div>
+      </section>
+
+      <section id="tab-voiceprofile" class="tab-panel panel hidden">
+        <h2>Minha voz clonada — configuração única</h2>
+        <div class="voice-engine-card">
+          <div>
+            <span class="eyebrow">MOTOR LOCAL</span>
+            <h3>Kyutai Pocket TTS · Português</h3>
+            <p>Executa em CPU. Sua amostra e sua voz clonada permanecem neste computador.</p>
+          </div>
+          <span id="voiceEngineBadge" class="badge">Verificando...</span>
+        </div>
+        <div id="voiceProfileStatus" class="notice"></div>
+        <div class="two-columns">
+          <div class="action-card">
+            <h3>1. Grave 20–30 segundos</h3>
+            <p>Leia naturalmente, como você fala no canal. Sem música, eco ou ruído. O sistema limpa a amostra e cria um perfil rápido de carregar.</p>
+            <div class="sample-script">“Saudações! Hoje eu vou mostrar todos os detalhes deste produto, explicar o que realmente importa e fazer alguns testes na prática. Quero que você perceba tanto os pontos positivos quanto as limitações, para decidir se ele faz sentido no seu uso.”</div>
+            <div class="record-controls">
+              <button id="recordReferenceButton" class="primary">● Gravar amostra</button>
+              <button id="stopReferenceButton" class="danger hidden">■ Parar e preparar</button>
+              <label class="upload-button secondary">Usar arquivo de áudio<input id="voiceReferenceFile" type="file" accept="audio/*" hidden></label>
+            </div>
+            <audio id="voiceReferencePlayer" class="audio-player hidden" controls></audio>
+            <div id="voiceProfileProgress" class="progress-card"></div>
+          </div>
+          <div class="action-card">
+            <h3>2. Dicionário de pronúncia</h3>
+            <p>Uma regra por linha no formato <code>texto=como falar</code>. Isso evita pronúncias estranhas de marcas e siglas.</p>
+            <textarea id="pronunciationText" rows="14"></textarea>
+            <button id="savePronunciationButton" class="secondary">Salvar dicionário</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-narration" class="tab-panel panel hidden">
+        <h2>Narração</h2>
+        <div id="narrationAudioModeNotice" class="notice"></div>
+        <p>No modo de narração, a voz sintética nunca entra automaticamente no vídeo. Na gravação manual, o v6.0.2 remove apenas silêncio confirmado no início/fim e mantém margens de segurança para não cortar a primeira nem a última sílaba.</p>
+        <div class="narration-toolbar">
+          <label>Qualidade
+            <select id="voiceQuality">
+              <option value="rapida">Rápida</option>
+              <option value="alta" selected>Alta — recomendada</option>
+              <option value="maxima">Máxima</option>
+            </select>
+          </label>
+          <label>Alternativas por bloco
+            <select id="voiceCandidates">
+              <option value="1">1</option>
+              <option value="2" selected>2</option>
+              <option value="3">3</option>
+            </select>
+          </label>
+          <button id="generateAllVoiceButton" class="primary large">Gerar todas as falas</button>
+        </div>
+        <div id="voiceProgress" class="progress-card"></div>
+        <div id="narrationBlocks"></div>
+      </section>
+
+      <section id="tab-assemble" class="tab-panel panel hidden">
+        <h2>Continuidade profissional + montagem</h2>
+        <p>O v6 separa evidência de ponto de corte: uma mudança de frase não cria uma nova cena. Em vídeo longo, o ritmo automático favorece tomadas sustentadas; em projetos com áudio original, o corte segue as tomadas/falas escolhidas em vez de recortar cada frase.</p>
+        <div class="evidence-engine-card">
+          <div><span class="eyebrow">SCENE CONTINUITY ENGINE v6 + AUDIO MODE ENGINE</span><h3>Menos cortes, mais continuidade e áudio sob controle</h3><p>Eventos críticos continuam verificáveis. Vídeos longos têm limite agressivo de microcortes; o áudio de cada tomada pode ser mutado, mantido baixo ou preservado em destaque.</p></div>
+          <span id="syncReadyBadge" class="badge">Aguardando</span>
+        </div>
+        <div id="recordingChecklist" class="checklist"></div>
+        <section class="export-studio" aria-labelledby="exportStudioTitle">
+          <div class="export-studio-head">
+            <div>
+              <span class="eyebrow">SAÍDAS DE VÍDEO</span>
+              <h3 id="exportStudioTitle">Escolha o que o Video Factory deve entregar</h3>
+              <p>Master para edição e arquivo para publicação são saídas independentes. Ative somente o que você realmente precisa.</p>
+            </div>
+            <span id="exportSummaryBadge" class="badge good">2 saídas</span>
+          </div>
+
+          <div class="output-grid">
+            <article id="masterOutputCard" class="output-card enabled">
+              <div class="output-card-head">
+                <div class="output-icon" aria-hidden="true">M</div>
+                <div class="output-copy">
+                  <span class="eyebrow">EDIÇÃO / PREMIERE</span>
+                  <h4>Master para Premiere</h4>
+                  <p>Arquivo de alta taxa de bits para abrir no Premiere e fazer a finalização sem começar de uma cópia muito comprimida.</p>
+                </div>
+                <label class="switch-control" title="Gerar Master para Premiere">
+                  <input id="createMaster" type="checkbox" checked aria-label="Gerar Master para Premiere">
+                  <span class="switch-track" aria-hidden="true"></span>
+                </label>
+              </div>
+              <div class="output-controls">
+                <label for="masterProfile"><span class="field-label">Qualidade do Master</span>
+                  <select id="masterProfile">
+                    <option value="premiere_hq">Master HQ · recomendado</option>
+                    <option value="premiere_max">Master Máxima · arquivo maior</option>
+                  </select>
+                </label>
+                <div id="masterSpec" class="output-spec"></div>
+                <div class="output-file"><span>Arquivo</span><strong>MASTER_DRSAYGON_VIDEO_FACTORY.mp4</strong></div>
+              </div>
+            </article>
+
+            <article id="deliveryOutputCard" class="output-card enabled">
+              <div class="output-card-head">
+                <div class="output-icon" aria-hidden="true">P</div>
+                <div class="output-copy">
+                  <span class="eyebrow">PUBLICAÇÃO</span>
+                  <h4>Arquivo para publicar</h4>
+                  <p>MP4 otimizado para enviar diretamente ao YouTube ou às redes sociais, sem carregar o peso do Master.</p>
+                </div>
+                <label class="switch-control" title="Gerar arquivo para publicação">
+                  <input id="createDelivery" type="checkbox" checked aria-label="Gerar arquivo para publicação">
+                  <span class="switch-track" aria-hidden="true"></span>
+                </label>
+              </div>
+              <div class="output-controls">
+                <label for="deliveryProfile"><span class="field-label">Destino</span>
+                  <select id="deliveryProfile">
+                    <option value="youtube_1080p">YouTube 1080p HQ</option>
+                    <option value="social_1080p">Redes sociais 1080p HQ</option>
+                  </select>
+                </label>
+                <div id="deliverySpec" class="output-spec"></div>
+                <div class="output-file"><span>Arquivo</span><strong>CONTEUDO_PRINCIPAL.mp4</strong></div>
+              </div>
+            </article>
+          </div>
+
+          <div class="export-footer">
+            <div>
+              <strong id="exportSelectionTitle">Master + arquivo de publicação</strong>
+              <p id="exportSelectionText">Serão gerados dois arquivos independentes.</p>
+            </div>
+            <button id="saveExportSettingsButton" class="secondary">Salvar saídas</button>
+          </div>
+        </section>
+        <div class="button-row">
+          <button id="buildSyncButton" class="primary large">1. Preparar corte profissional</button>
+          <button id="assembleButton" class="primary large" disabled>2. Gerar Master + publicação</button>
+        </div>
+        <div id="activeEditProgress" class="progress-card active-edit-progress"></div>
+        <div id="syncProgress" class="progress-card hidden"></div>
+        <div id="assemblyProgress" class="progress-card hidden"></div>
+        <div id="syncMap" class="sync-map"></div>
+        <div id="resultArea"></div>
+        <details class="logs-box"><summary>Registro técnico</summary><pre id="logsText"></pre></details>
+      </section>
+
+      <section id="tab-publication" class="tab-panel panel hidden">
+        <h2>Vídeo final + pacote de publicação</h2>
+        <p>Revise o vídeo final sem sair do Video Factory. Logo abaixo, o Publication Studio identifica o tipo de conteúdo, pesquisa fontes quando isso realmente agrega valor e prepara metadados SEO prontos para copiar.</p>
+        <div class="button-row">
+          <button id="generatePublicationButton" class="primary large">Gerar pacote SEO inteligente</button>
+          <button id="openPublicationButton" class="secondary">Abrir 06_PUBLICACAO</button>
+        </div>
+        <div id="publicationProgress" class="progress-card"></div>
+        <div id="publicationArea"></div>
+      </section>
+    </section>
+  </section>
+</main>
+
+<dialog id="newProjectDialog">
+  <form id="newProjectForm" method="dialog">
+    <h2>Novo projeto</h2>
+    <label>Nome do projeto<input name="name" required placeholder="Ex.: Intelbras XNB 720"></label>
+    <label>Tema principal / produto / evento <span class="muted">(opcional)</span><input name="product" placeholder="Ex.: Nobreak Intelbras XNB 720, passeio no parque, tutorial de Excel..."></label>
+    <fieldset class="format-picker">
+      <legend>Formato</legend>
+      <label><input type="radio" name="format" value="youtube_16_9" checked> <b>Vídeo YouTube 16:9</b><span>1920 × 1080</span></label>
+      <label><input type="radio" name="format" value="short_9_16"> <b>Short 9:16</b><span>1080 × 1920 · 30–120 s</span></label>
+    </fieldset>
+    <fieldset class="audio-picker">
+      <legend>Áudio principal</legend>
+      <label><input type="radio" name="audio_mode" value="narration" checked> <b>Narração</b><span>Minha voz/voz local; áudio original mutado por padrão</span></label>
+      <label><input type="radio" name="audio_mode" value="original"> <b>Áudio original das filmagens</b><span>Ideal para vlog, canal infantil, eventos, entrevistas e cenas faladas</span></label>
+      <label><input type="radio" name="audio_mode" value="mixed"> <b>Misto</b><span>Narração + áudio original configurável por cena</span></label>
+    </fieldset>
+    <label>Objetivo<textarea name="objective" rows="3">Criar um vídeo claro, envolvente e pronto para publicação.</textarea></label>
+    <div id="longDurationField" class="duration-slider-card">
+      <label>Duração aproximada: <strong><span id="longMinutesLabel">10</span> minutos</strong>
+        <input type="range" name="desired_minutes" min="1" max="90" step="1" value="10">
+      </label>
+      <small class="subtitle">Permitido: 1 a 90 minutos. O valor é uma meta editorial; a duração final acompanha o roteiro e a narração aprovados.</small>
+    </div>
+    <div id="shortDurationField" class="hidden">
+      <label>Duração do Short: <strong><span id="shortSecondsLabel">60</span> segundos</strong>
+        <input type="range" name="short_seconds" min="30" max="120" step="5" value="60">
+      </label>
+      <small class="subtitle">Permitido: 30 segundos a 2 minutos.</small>
+    </div>
+    <div class="button-row end"><button type="button" id="cancelProjectButton" class="secondary">Cancelar</button><button type="submit" class="primary">Criar projeto</button></div>
+  </form>
+</dialog>
+<div id="toast" class="toast hidden"></div>
+<script src="/static/app.js?v=6.0.2-video-factory"></script>
+</body>
+</html>

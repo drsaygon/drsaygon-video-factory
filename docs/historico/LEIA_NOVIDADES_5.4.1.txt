@@ -1,0 +1,14 @@
+DRSAYGON MONTADOR IA 5.4.1 — GENERIC PUBLICATION ENGINE
+
+Objetivo desta versão: tornar a publicação realmente genérica. O Montador não presume mais que todo vídeo é review de produto.
+
+Principais mudanças:
+- Campo "Tema principal / produto / evento" agora é opcional. Projetos de vlog, vídeo infantil/familiar, tutorial, gameplay, educação etc. podem ser criados sem produto.
+- O Publication Studio classifica o tipo de conteúdo antes de decidir se deve pesquisar a Web e quais seções usar na descrição.
+- Pesquisa externa é adaptativa: produto específico usa fabricante/manual/ficha; evento/local/tema usa fontes primárias quando útil; conteúdo pessoal/familiar pode dispensar pesquisa.
+- Identificadores de modelo e números (ex.: XNB 720, RTX 4050, S24) passam a pesar na busca oficial para evitar usar uma página genérica da família como se fosse a ficha do modelo exato.
+- Produtos recebem uma ficha factual estruturada antes da escrita. Especificações só aparecem se forem do modelo/variante exato.
+- Descrições de produto não podem substituir dados ausentes por parágrafos genéricos da linha/família.
+- Títulos continuam com exatamente 100 caracteres, incluindo #shorts quando aplicável, mas o motor remove caudas redundantes como "XNB 720 Intelbras" quando marca/modelo já apareceram.
+- SEO e 25 tags passaram a ser orientados ao tipo real do vídeo, sem inserir "review", "teste" ou "unboxing" em vídeos que não sejam desse tipo.
+- Novos testes de regressão cobrem produto e vídeo infantil/familiar sem produto.

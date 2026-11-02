@@ -1,0 +1,8 @@
+DrSaygon Video Factory - licença de uso pessoal
+
+Copyright (c) 2026 Sandro da Silva Henriques.
+
+Este pacote foi preparado para uso pessoal do titular. Bibliotecas de terceiros
+mantêm suas próprias licenças. FFmpeg, Python, FastAPI, Google Gen AI SDK e
+demais dependências não são redistribuídos neste ZIP; são instalados de suas
+fontes oficiais pelo usuário.

@@ -1,0 +1,36 @@
+CAMINHO PARA PRODUTO COMERCIAL - NOTA DE ENGENHARIA v6
+======================================================
+
+A v6 consolida a proposta para AUTOPILOT-FIRST:
+- fluxo normal em poucos cliques;
+- ferramentas de laboratorio como excecao;
+- Smart Resume para nao reprocessar etapas validas;
+- Timeline Resolver;
+- evidencias auditaveis;
+- Continuity Engine (batida semantica != corte);
+- Edit Quality Guard deterministico;
+- QA multimodal do rough cut;
+- override humano e historico;
+- video final + pacote de publicacao;
+- audio original/misto por projeto e por cena;
+- Master HQ + perfil de entrega;
+- metadados DrSaygon Video Factory.
+
+ANTES DE VENDER publicamente ainda e necessario:
+1. instalador assinado + desinstalador + rollback;
+2. Windows Credential Manager/DPAPI para chaves;
+3. licenciamento/ativacao, se aplicavel;
+4. politica de privacidade explicando uploads ao Gemini;
+5. consentimento explicito para clonagem de voz;
+6. suite de regressao com dezenas/centenas de estilos de canal e materiais reais;
+7. testes long-form (10–60 min), Shorts, tutoriais, unboxing, gameplay, culinaria, vlog etc.;
+8. observabilidade/telemetria somente opt-in, sem filmagens ou voz por padrao;
+9. auditoria juridica de termos e licencas de Pocket TTS, Google SDK/API, FFmpeg e dependencias;
+10. UX de autosave, recuperacao e relatorio de falhas compreensivel.
+
+PRINCIPIO DE PRODUTO
+Recursos avancados podem crescer, mas o numero de cliques do Autopilot deve cair.
+Toda nova capacidade deve tentar resolver a ambiguidade automaticamente antes de
+pedir trabalho ao criador.
+
+Esta nota e checklist tecnico, nao parecer juridico.

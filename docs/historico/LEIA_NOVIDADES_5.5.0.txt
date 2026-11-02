@@ -1,0 +1,13 @@
+DRSAYGON MONTADOR IA 5.5.0 — ADAPTIVE DESCRIPTION COMPOSER
+
+Objetivo: transformar a descrição em um artefato realmente útil para publicação, sem engessar o app em vídeos de produto.
+
+Principais mudanças:
+- descrição final é montada por um compositor determinístico, não apenas por um texto livre do Gemini;
+- produto específico: pesquisa + ficha factual + parágrafos úteis + características técnicas + conteúdo da embalagem;
+- dados técnicos confirmados não podem ser silenciosamente omitidos pelo redator;
+- campos ausentes não são inventados;
+- vídeos sem produto usam estrutura própria: tutorial, vlog/evento, infantil/familiar, viagem, gameplay, receita, educação etc.;
+- pesquisa de produto executa múltiplas consultas e tenta aproveitar dados estruturados JSON-LD da página do fabricante;
+- informações explícitas do autor podem complementar a ficha factual;
+- novo teste de regressão impede que seções técnicas apareçam em vídeos infantis/familiares.

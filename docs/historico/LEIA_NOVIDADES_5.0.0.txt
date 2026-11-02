@@ -1,0 +1,71 @@
+DRSAYGON MONTADOR IA 5.0.0 — AUTOPILOT STUDIO + CONTINUITY ENGINE
+=================================================================
+
+POR QUE ESTA VERSAO EXISTE
+A v4 ficou muito boa em provar "qual cena" deveria aparecer, mas cometeu um erro
+de arquitetura editorial: cada pequena batida semantica podia virar um ponto de corte.
+Isso criava videos picotados, repetia os mesmos segundos de uma filmagem e podia
+produzir vai-e-volta de timestamps mesmo quando uma tomada demonstrativa longa era
+claramente melhor.
+
+A v5 separa definitivamente:
+- BATIDA SEMANTICA = unidade de verdade/evidencia;
+- TOMADA VISUAL (Visual Run) = decisao real de corte.
+
+CONTINUITY ENGINE
+- agrupa varias frases em uma unica tomada longa quando o assunto/estado continua;
+- ancora fenomenos/acoes confirmados pelo autor e evita sair da tomada sem motivo;
+- remove desvios B-roll do tipo A-B-A quando uma frase nova nao exige nova imagem;
+- evita reiniciar o mesmo trecho do arquivo em cada frase;
+- mantem progressao temporal da fonte quando isso e possivel;
+- permite replay somente quando houver intencao editorial/limite real de material;
+- preserva a verificacao de cada batida mesmo quando varias compartilham um unico corte.
+
+EDIT QUALITY GUARD (DETERMINISTICO)
+Antes do QA multimodal, o programa mede:
+- numero de cortes e cortes por minuto;
+- tomadas curtas em rajada;
+- reset de timestamp no mesmo arquivo;
+- repeticao forte de trecho;
+- ping-pong A-B-A.
+Erros estruturais podem bloquear o render. O Gemini deixa de ser o unico juiz de ritmo.
+
+AUTOPILOT STUDIO — MODO PADRAO
+O fluxo normal passa a ser:
+1. adicionar filmagens;
+2. informar objetivo/observacoes quando necessario;
+3. clicar "Montar automaticamente";
+4. se a voz ainda nao estiver aprovada, o programa para SOMENTE nesse ponto;
+5. clicar novamente e receber video final + pacote de publicacao.
+
+SMART RESUME
+O Autopilot reutiliza trabalho valido:
+- catalogo profissional existente;
+- roteiro existente;
+- narracoes ja aprovadas/gravadas;
+- sincronismo v5 aprovado.
+Ele nao reprocessa tudo so porque voce clicou novamente.
+
+TRES MODOS
+- Autopilot: gera ate video final + publicacao quando as vozes estao aprovadas.
+- Revisao rapida: prepara o corte e para antes do render final.
+- Director: expoe controles de cronologia, Evidence Lab, batidas e overrides.
+
+TIMELINE RESOLVER
+Em projetos novos, quando a cronologia nao foi definida pelo autor, o Autopilot usa
+as evidencias ja analisadas para inferir uma ordem provavel como preferencia GUIADA.
+Projetos v4 existentes preservam sua ordem salva como MANUAL; a atualizacao nunca
+reordena silenciosamente um projeto antigo.
+
+GUI
+- progresso de preparar corte e render final aparece no mesmo painel fixo, logo
+  abaixo dos botoes da etapa 6;
+- Director Engine e Evidence Lab ficam em Opcoes avancadas no fluxo normal;
+- o mapa principal mostra TOMADAS REAIS; as batidas semanticas ficam recolhidas;
+- cada tomada longa possui previa.
+
+IMPORTANTE
+"Pronto para publicar" significa que o pipeline automatico concluiu evidencias,
+continuidade, QA, render e textos de publicacao. Nenhuma IA pode garantir perfeicao
+para qualquer material arbitrario; quando a evidência for realmente ambigua, o
+sistema deve pedir uma intervencao simples em vez de inventar.

@@ -1,0 +1,7 @@
+DrSaygon Montador IA v5.4.0 - Publication SEO+
+
+- Video YouTube 16:9: slider de duracao de 1 a 90 minutos, com unidade explicita.
+- Titulo recomendado: contrato de exatamente 100 caracteres; Shorts terminam em #shorts dentro do limite.
+- Publication Studio: pesquisa oficial passa a procurar explicitamente dimensoes, peso e especificacoes tecnicas.
+- Descricao: secao Caracteristicas e especificacoes tecnicas oficiais quando houver evidencia de fonte oficial.
+- Mantidos Autopilot Self-Healing, Continuity Engine, 25 tags e preview do video final.

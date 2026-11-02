@@ -1,0 +1,41 @@
+DrSaygon Montador IA 5.1.0 - AUTOPILOT RELIABILITY
+====================================================
+
+Esta versao corrige dois problemas observados em uso real do Autopilot v5.0:
+
+1) PROGRESSO REAL DO AUTOPILOT
+- A barra principal agora espelha o progresso real das etapas filhas.
+- Analise, roteiro, voz, sincronismo, resgates de evidencia, render e publicacao
+  movimentam a mesma barra de forma monotona.
+- Se houver uma excecao, o progresso nao volta artificialmente para 0%.
+
+2) ANTI-ENGESSAMENTO / GATE VISUAL INTELIGENTE
+- O sistema separa tres tipos de narracao:
+  HARD: a imagem precisa provar literalmente uma acao/fenomeno.
+  CONTEXTUAL: a imagem deve contextualizar, mas nao precisa provar palavra por palavra.
+  ABSTRACT: explicacao tecnica pode continuar sobre uma boa tomada sustentada.
+- Frases como "Repara de novo na comutacao" ou "Quando muda a forma..." nao
+  disparam mais buscas dirigidas caras nem bloqueiam o Autopilot sozinhas.
+- Busca dirigida fica reservada a eventos realmente observaveis, como retirar plugue,
+  pressionar botao, acender/apagar e faixa/banding/flicker.
+- Evidencias confirmadas manualmente pelo autor recebem prioridade maxima.
+- Para explicacoes, o Autopilot prefere manter a tomada longa ja estabelecida.
+
+3) RESGATE MAIS RAPIDO
+- Busca dirigida automatica fica limitada aos arquivos mais provaveis.
+- Menos microclipes sao enviados ao Gemini por tentativa.
+- O progresso interno do resgate aparece na barra do Autopilot.
+
+4) SMART RESUME
+- Sincronismos v5.0 sao reconstruidos automaticamente uma vez para receber as
+  regras 5.1; analise, roteiro, narracoes e evidencias existentes sao preservados.
+
+5) REGRESSAO AUTOMATICA
+- Novo teste scripts/test_autopilot_reliability.py valida:
+  * classificacao correta de obrigacoes visuais;
+  * prioridade para evidencia confirmada pelo autor;
+  * fallback contextual sem fail-closed;
+  * espelhamento real do progresso do Autopilot.
+
+Objetivo: o modo Autopilot deve resolver sozinho o fluxo normal. Director/Evidence
+Lab continuam disponiveis apenas para excecoes reais, sem remover recursos avancados.

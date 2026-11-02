@@ -1,0 +1,73 @@
+# ==============================================================================
+# DrSaygon Video Factory - .gitignore
+# ==============================================================================
+
+# Ambientes virtuais Python
+.venv/
+.venv_voice/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Chaves e variáveis de ambiente confidenciais (NUNCA versionar segredos!)
+.env
+*.env
+!.env.example
+
+# Binários do FFmpeg portátil baixados via scripts/install_ffmpeg.py
+tools/ffmpeg/
+tools/*/
+*.exe
+*.dll
+
+# Pastas de dados de trabalho e perfil (preservadas na raiz via .gitkeep)
+projetos/*
+!projetos/.gitkeep
+voice_profiles/*
+!voice_profiles/.gitkeep
+
+# Arquivos de log e depuração
+*.log
+voice_engine.log
+voice_engine.previous.log
+
+# Caches e artefatos de compilação Python
+__pycache__/
+*/__pycache__/
+*/*/__pycache__/
+*/*/*/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Testes e cobertura
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editores e arquivos temporários de Sistema Operacional
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+desktop.ini
