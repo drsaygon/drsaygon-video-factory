@@ -46,3 +46,47 @@ def default_pronunciations() -> dict[str, str]:
         "GPU": "gê pê u",
         "CPU": "cê pê u",
     }
+
+
+def calculate_phonetic_budget(
+    duration_sec: float,
+    speaking_rate_wps: float = 2.65,
+    pause_overhead_ratio: float = 0.12,
+) -> dict[str, Any]:
+    """Calculate phonetic speech budget for a scene based on natural Brazilian Portuguese cadence."""
+    import math
+    duration = max(0.5, float(duration_sec))
+    effective_speech = max(0.5, duration * (1.0 - pause_overhead_ratio))
+    target_words = max(1, round(effective_speech * speaking_rate_wps))
+    min_words = max(1, math.floor(target_words * 0.88))
+    max_words = max(min_words + 1, math.ceil(target_words * 1.08))
+    target_syllables = max(1, round(target_words * 2.35))
+    return {
+        "scene_duration_sec": round(duration, 3),
+        "effective_speech_sec": round(effective_speech, 3),
+        "target_words": int(target_words),
+        "min_words": int(min_words),
+        "max_words": int(max_words),
+        "target_syllables": int(target_syllables),
+        "speech_rate_wps": round(speaking_rate_wps, 2),
+    }
+
+
+def estimate_spoken_duration_sec(text: str, speaking_rate_wps: float = 2.65) -> float:
+    """Estimate spoken duration in seconds including natural respiratory pause overhead."""
+    cleaned = " ".join(str(text or "").split()).strip()
+    if not cleaned:
+        return 0.0
+    words = len(cleaned.split())
+    duration = float(words) / max(0.5, speaking_rate_wps)
+    duration += cleaned.count(",") * 0.18
+    duration += cleaned.count(";") * 0.18
+    duration += cleaned.count("—") * 0.18
+    duration += cleaned.count("--") * 0.18
+    ellipsis_count = cleaned.count("...")
+    cleaned_no_ellipsis = cleaned.replace("...", "")
+    duration += ellipsis_count * 0.35
+    duration += cleaned_no_ellipsis.count(".") * 0.35
+    duration += cleaned_no_ellipsis.count("?") * 0.35
+    duration += cleaned_no_ellipsis.count("!") * 0.35
+    return round(duration, 3)

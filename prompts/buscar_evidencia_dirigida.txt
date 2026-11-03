@@ -10,6 +10,7 @@ CONTEXTO DA JANELA
 
 IMPORTANTE
 Este microclipe foi propositalmente DESACELERADO antes de ser enviado para aumentar a chance de enxergar eventos rápidos, flicker, banding, retirada/inserção de plugue e outras mudanças curtas.
+Use os pontos de corte físicos e limites de silêncio como balizadores primários, identificando o ápice visual exato da evidência.
 
 REGRAS ANTI-ALUCINAÇÃO
 - confirmed=true SOMENTE se o alvo estiver realmente visível.

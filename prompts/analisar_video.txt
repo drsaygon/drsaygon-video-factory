@@ -10,6 +10,11 @@ CONTEXTO CONFIRMADO DO PROJETO
 
 Sua tarefa é criar um mapa temporal preciso do que REALMENTE pode ser usado na edição, considerando imagem E áudio original.
 
+SINAIS FÍSICOS E ÂNCORA VISUAL (v7.0 APEX)
+- Use o Mapa de Sinais Físicos do FFmpeg (mudanças de cena/scdet e janelas de silêncio) presente no contexto como referência primária para os limites das tomadas (Safe Cuts).
+- Para cada cena, identifique a âncora visual (visual_anchor): o timestamp exato do ápice visual na tela e a ação correspondente.
+- Classifique a complexidade visual (visual_complexity: low, medium, high) e o tipo de gancho de retenção (retention_hook_type: standard, pattern_interrupt, visual_proof, climax).
+
 REGRAS DE EVIDÊNCIA
 - Nunca invente ação, estado, objeto, fala, fenômeno, especificação ou causa.
 - Diferencie claramente antes/durante/depois quando houver mudança observável.

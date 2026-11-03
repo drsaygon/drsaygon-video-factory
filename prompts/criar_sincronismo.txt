@@ -22,6 +22,7 @@ Para cada beat_id, devolva de zero a três event_id candidatos, ordenados do mel
 CRITÉRIOS
 - Se a fala menciona uma ação concreta (ex.: "tiro da tomada"), priorize um evento que MOSTRA essa ação, não um b-roll do produto.
 - Se a fala menciona um fenômeno (ex.: "faixa escura", "pisca", "flicker"), selecione somente evento em que o fenômeno esteja explicitamente catalogado como visível.
+- Respeite a escrita espelhada na imagem e o phonetic_budget: a frase deve sincronizar com precisão sub-segundo no ápice visual (visual_anchor).
 - Se a fala é contextual/genérica, b-roll relevante é permitido.
 - A ordem temporal e causal importa. "Antes", "quando", "depois", "passa para bateria", "volta para rede" não são equivalentes.
 - Não use uma cena só porque contém o mesmo produto; ela precisa sustentar o que está sendo dito naquele instante.

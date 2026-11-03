@@ -18,8 +18,10 @@ from app.models import (
     ManualEvidenceRequest,
 )
 from app.services.ffmpeg import (
+    apply_snap_to_cut,
     create_slow_search_proxy,
     extract_grayscale_frames,
+    extract_physical_media_map,
     probe_media,
 )
 from app.services.gemini import find_directed_evidence
@@ -311,6 +313,14 @@ def search_directed_evidence(
         relative_end = finding.end_seconds if finding.end_seconds is not None else (end - start) * DIRECTED_SEARCH_SLOW_FACTOR
         mapped_start = start + max(0.0, float(relative_start)) / DIRECTED_SEARCH_SLOW_FACTOR
         mapped_end = start + max(float(relative_start) + 0.2, float(relative_end)) / DIRECTED_SEARCH_SLOW_FACTOR
+        try:
+            phys_map = extract_physical_media_map(source)
+            safe_cuts = phys_map.get("safe_cut_timestamps", [])
+            if safe_cuts:
+                mapped_start = apply_snap_to_cut(mapped_start, safe_cuts, threshold=0.40)
+                mapped_end = apply_snap_to_cut(mapped_end, safe_cuts, threshold=0.40)
+        except Exception:
+            pass
         mapped_start = max(start, min(mapped_start, end))
         mapped_end = max(mapped_start + 0.2, min(mapped_end, end))
         combined_confidence = max(float(finding.confidence), min(0.88, 0.45 + local_score * 0.4)) if local_score else float(finding.confidence)

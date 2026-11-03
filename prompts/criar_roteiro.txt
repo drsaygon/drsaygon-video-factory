@@ -20,6 +20,11 @@ REGRAS ABSOLUTAS
 - Use diferentes tomadas apenas quando houver ganho real: nova ação, mudança de assunto, demonstração, reação, detalhe necessário ou passagem de tempo.
 - audio_strategy: mute para áudio inútil; ambient para som ambiente discreto; feature quando o áudio original é parte do conteúdo.
 
+ORÇAMENTO FONÉTICO E ESCRITA ESPELHADA (v7.0 APEX)
+- Respeite rigorosamente o phonetic_budget (target_words, min_words, max_words) de cada bloco ou cena calculada pela duração.
+- ESCRITA ESPELHADA NA IMAGEM: cada frase deve descrever ou reagir diretamente ao que está acontecendo na tela naquele instante, posicionando a palavra de maior impacto visual/auditivo sobre a âncora da cena (visual_anchor).
+- Proibição estrita de clichês genéricos de IA: "No vídeo de hoje vamos ver...", "Em conclusão...", "Vale ressaltar que...", "Como podemos observar...". O texto deve soar 100% humano, dinâmico, magnético e com transições invisíveis entre blocos.
+
 MODO DE ÁUDIO DO PROJETO
 O campo project_json.audio_mode define a política:
 - narration: a narração aprovada será o áudio principal. Marque B-roll como mute por padrão e feature apenas se o som original precisar ser ouvido em algum bloco sem conflito.

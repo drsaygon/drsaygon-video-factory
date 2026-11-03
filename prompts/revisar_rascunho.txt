@@ -21,6 +21,7 @@ Tente REPROVAR o corte se houver qualquer erro editorial perceptível entre fala
 
 VERIFIQUE ESPECIALMENTE
 - a imagem que aparece no exato momento de cada frase;
+- conformidade com o phonetic_budget: corte de palavras gordurosas sempre que a fala superar a janela da cena, preservando intacta a palavra-gatilho vinculada ao evento visual;
 - ação física correta: conectar, retirar, apertar, ligar, desligar etc.;
 - estado correto antes/durante/depois;
 - fenômeno citado realmente visível, como faixa/banding/flicker;

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from enum import Enum
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -20,6 +20,47 @@ ChronologyMode = Literal["off", "guided", "strict"]
 WorkflowMode = Literal["autopilot", "quick_review", "director"]
 EditingStyle = Literal["auto", "balanced", "demonstrative", "dynamic"]
 VisualObligation = Literal["hard", "contextual", "abstract"]
+SyncStrategy = Literal["native", "pause_shaping", "elastic_trim", "micro_tempo", "ai_rewrite"]
+RetentionHookType = Literal["pattern_interrupt", "visual_proof", "climax", "standard"]
+VisualComplexity = Literal["low", "medium", "high"]
+
+
+class PhysicalCutPoint(BaseModel):
+    timestamp: float = 0.0
+    score: float = 0.0
+    cut_type: str = "scene_change"
+
+
+class AudioSilenceWindow(BaseModel):
+    start: float = 0.0
+    end: float = 0.0
+    duration: float = 0.0
+
+
+class PhysicalMediaMap(BaseModel):
+    duration: float = 0.0
+    cut_points: list[PhysicalCutPoint] = Field(default_factory=list)
+    silence_windows: list[AudioSilenceWindow] = Field(default_factory=list)
+    mean_volume_db: float = -20.0
+    max_volume_db: float = 0.0
+    safe_cut_timestamps: list[float] = Field(default_factory=list)
+
+
+class VisualAnchor(BaseModel):
+    timestamp_sec: float = 0.0
+    trigger_phrase: str = ""
+    action_label: str = ""
+    confidence: float = 1.0
+
+
+class PhoneticBudget(BaseModel):
+    scene_duration_sec: float = 0.0
+    effective_speech_sec: float = 0.0
+    target_words: int = 0
+    min_words: int = 0
+    max_words: int = 0
+    target_syllables: int = 0
+    speech_rate_wps: float = 2.6
 
 
 class SegmentQuality(str, Enum):
@@ -57,6 +98,13 @@ class VideoSegment(BaseModel):
     critical_action: bool = False
     verified_by_user: bool = False
     detection_source: str = "gemini_general"
+    visual_anchor: VisualAnchor | None = None
+    phonetic_budget: PhoneticBudget | None = None
+    sync_precision_score: float = 100.0
+    sync_drift_ms: float = 0.0
+    applied_sync_strategy: SyncStrategy = "native"
+    visual_complexity: VisualComplexity = "medium"
+    retention_hook_type: RetentionHookType = "standard"
 
     @model_validator(mode="after")
     def validate_interval(self) -> "VideoSegment":
@@ -107,6 +155,13 @@ class ScriptBlock(BaseModel):
     editing_note: str = ""
     pacing: Literal["fast", "normal", "slow", "hold"] = "normal"
     block_type: Literal["hook", "body", "demo", "verdict", "cta", "ending"] = "body"
+    visual_anchor: Optional[VisualAnchor] = None
+    phonetic_budget: Optional[PhoneticBudget] = None
+    sync_precision_score: float = 100.0
+    sync_drift_ms: float = 0.0
+    applied_sync_strategy: SyncStrategy = "native"
+    visual_complexity: VisualComplexity = "medium"
+    retention_hook_type: RetentionHookType = "standard"
 
     @field_validator("narration")
     @classmethod
@@ -144,6 +199,13 @@ class NarrationBeat(BaseModel):
     visual_obligation: VisualObligation = "contextual"
     timing_source: Literal["audio_aligned", "estimated"] = "estimated"
     timing_confidence: float = Field(default=0.5, ge=0, le=1)
+    visual_anchor: VisualAnchor | None = None
+    phonetic_budget: PhoneticBudget | None = None
+    sync_precision_score: float = 100.0
+    sync_drift_ms: float = 0.0
+    applied_sync_strategy: SyncStrategy = "native"
+    visual_complexity: VisualComplexity = "medium"
+    retention_hook_type: RetentionHookType = "standard"
 
     @model_validator(mode="after")
     def validate_interval(self) -> "NarrationBeat":
@@ -217,6 +279,13 @@ class VisualRun(BaseModel):
     shot_style: ShotStyle = "normal"
     sequence_index: int = Field(default=0, ge=0)
     allows_replay: bool = False
+    visual_anchor: VisualAnchor | None = None
+    phonetic_budget: PhoneticBudget | None = None
+    sync_precision_score: float = 100.0
+    sync_drift_ms: float = 0.0
+    applied_sync_strategy: SyncStrategy = "native"
+    visual_complexity: VisualComplexity = "medium"
+    retention_hook_type: RetentionHookType = "standard"
 
     @model_validator(mode="after")
     def validate_interval(self) -> "VisualRun":
@@ -257,6 +326,13 @@ class ProfessionalSyncBeat(BaseModel):
     visual_obligation: VisualObligation = "contextual"
     timing_source: Literal["audio_aligned", "estimated"] = "estimated"
     timing_confidence: float = Field(default=0.5, ge=0, le=1)
+    visual_anchor: VisualAnchor | None = None
+    phonetic_budget: PhoneticBudget | None = None
+    sync_precision_score: float = 100.0
+    sync_drift_ms: float = 0.0
+    applied_sync_strategy: SyncStrategy = "native"
+    visual_complexity: VisualComplexity = "medium"
+    retention_hook_type: RetentionHookType = "standard"
     event_id: str = ""
     filename: str = ""
     source_start_seconds: float = 0

@@ -3,8 +3,12 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
@@ -12,8 +16,6 @@ from fastapi.testclient import TestClient
 
 from app.config import FFMPEG_BIN, FFPROBE_BIN
 from app.services.ffmpeg import create_proxy
-
-ROOT = Path(__file__).resolve().parents[1]
 
 with tempfile.TemporaryDirectory(prefix="drsaygon_v602_player_") as tmp:
     work = Path(tmp)

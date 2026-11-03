@@ -1,0 +1,41 @@
+DRSAYGON VIDEO FACTORY 7.0.0 - APEX AUTONOMOUS EDITION
+
+FOCO DESTA VERSAO
+- Arquitetura de Inteligência Autônoma Apex supervisionada pelo Arquiteto-Chefe Gemini 4.
+- Sincronismo audiovisual sub-segundo determinístico com resolução elástica em 4 níveis.
+- Extração física híbrida de sinais via FFmpeg (scdet + silencedetect + volumedetect) antes da IA.
+- Snap-to-Cut Magnético em Cortes Ouro cirúrgicos eliminando flash frames.
+- Orçamento fonético calibrado para Português Brasileiro natural e escrita espelhada na imagem.
+- Auditoria de ritmo dinâmico para retenção no YouTube e auto-reparo cirúrgico por cena no roteiro.
+- Telemetria de Sync Score e Orçamento Fonético na UI + geração de capítulos YouTube cravados em 00:00.
+
+1. MOTOR DE EXTRAÇÃO FÍSICA DE CENA E ÁUDIO (FFmpeg)
+- Novo método `extract_physical_media_map`: extrai cortes visuais reais via `scdet`, janelas de silêncio via `silencedetect` e níveis de volume via `volumedetect`.
+- Identificação de "Cortes Ouro" (`safe_cut_timestamps`): emparelhamento físico entre corte visual e janela de silêncio com margem de segurança respiratória (+/-0.15s) para nunca cortar fonemas.
+- Fallback determinístico seguro para testes unitários offline e arquivos sintéticos.
+
+2. DETECÇÃO MULTIMODAL HÍBRIDA E ORÇAMENTO FONÉTICO
+- `calculate_phonetic_budget`: cálculo matemático exato de tempo efetivo de locução descontando pausas naturais (pause_overhead_ratio = 0.12), determinando palavras alvo, mínimo, máximo e sílabas estimadas para Português Brasileiro (2.65 WPS).
+- `estimate_spoken_duration_sec`: estimador acústico de cadência que computa pausas por vírgula (+0.18s) e pontuação terminal (+0.35s).
+- Snap-to-Cut Magnético no Gemini e Directed Evidence: alinhamento automático de in/out points aos safe cuts físicos mais próximos (< 0.40s).
+
+3. MOTOR DE SINCRONISMO ELÁSTICO SUB-SEGUNDO
+Árvore de decisão em cascata determinística de 4 níveis (`resolve_elastic_sync`):
+- Nível 1 — Nativo (|Delta D| <= 0.12s): ajuste fino de padding sem distorção (Score 100%).
+- Nível 2 — Modelagem de Pausas (0.12s < |Delta D| <= 0.45s): micro-respiros ou absorção de silêncios internos direcionando o trigger_phrase sobre a âncora visual (Score 98%).
+- Nível 3 — Trim Elástico da Borda + Micro-Tempo (0.45s < |Delta D| <= 1.20s): ajuste de borda até 0.60s na mídia original combinado com cadência atempo imperceptível (0.96 a 1.05).
+- Nível 4 — Gatilho de Auto-Reparo de Roteiro (|Delta D| > 1.20s): reescrita cirúrgica de cena pelo QA.
+- Cálculo de `sync_precision_score` percentual contínuo com penalidades por estratégia e integridade de ancoragem.
+
+4. AUDITORIA DE RITMO (PACING) E AUTO-REPARO CIRÚRGICO
+- `audit_retention_pacing`: garantia de ritmo dinâmico para YouTube (nenhuma sequência estática > 12.0s sem variação ou evidência dirigida) e verificação de coerência narrativa entre frases consecutivas.
+- `audit_and_repair_scene_sync`: reparo cirúrgico cena-a-cena em `draft_qa.py` sempre que uma cena violar o orçamento fonético em > 15% ou pontuar < 85% no sync score, preservando 100% dos blocos aprovados e a palavra-chave da âncora visual.
+
+5. TELEMETRIA NA UI E CAPÍTULOS CRAVADOS
+- Interface web com badges visuais contextuais: Sync Score percentual (verde >= 90%, amarelo >= 75%), orçamento fonético (palavras atuais / alvo) e âncora visual (tempo exato do evento).
+- Estúdio de Publicação com `compose_youtube_chapters`: timestamps de capítulos iniciados estritamente em 00:00 e calculados com as durações pós-sincronismo real.
+
+6. BATERIA DE TESTES E RELEASE GATE v7.0
+- Novo teste de ponta a ponta `test_v700_apex_intelligence.py` validando os 4 eixos da inteligência v7.
+- Novo `release_gate_v700.py` executando 22 testes de regressão automatizados com 100% de aprovação.
+- Preservação total de compatibilidade retroativa com os gates v6.0.0 e v6.0.2.

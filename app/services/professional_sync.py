@@ -16,6 +16,7 @@ from app.config import (
 from app.models import (
     EditPlan,
     NarrationBeat,
+    PhoneticBudget,
     ProfessionalSyncBeat,
     ProfessionalSyncPlan,
     ProjectKnowledge,
@@ -24,8 +25,11 @@ from app.models import (
     RoughCutReview,
     SyncCandidate,
     SyncMatch,
+    SyncStrategy,
+    VisualAnchor,
 )
 from app.services.ffmpeg import audio_duration, create_qa_slice, create_verification_proxy, probe_media
+from app.services.voice_profile import calculate_phonetic_budget, estimate_spoken_duration_sec
 from app.services.directed_evidence import search_directed_evidence
 from app.services.continuity import apply_conservative_autopilot_policy, build_visual_runs
 from app.services.draft_qa import render_rough_cut
@@ -57,6 +61,110 @@ _HARD_ACTION_PATTERNS = (
     re.compile(r"\b(?:acende|acendem|acendeu|apaga|apagam|apagou)\b"),
     re.compile(r"\b(?:ligo|ligando|desligo|desligando)\b.{0,36}\b(?:nobreak|equipamento|luz|lampada|iluminacao)\b"),
 )
+
+
+def calculate_sync_precision_score(
+    residual_drift_sec: float,
+    strategy: SyncStrategy | str = "native",
+    anchoring_failed: bool = False,
+) -> float:
+    """Calculate synchronization precision score (0.0 to 100.0).
+
+    Formula (Phase 4.2):
+    Score_sync = max(0.0, 100.0 - min(100.0, (|residual_drift_ms| / 15.0) + P_strategy))
+    P_strategy: native=0, pause_shaping=2, elastic_trim=5, micro_tempo=8, ai_rewrite=15.
+    If anchoring fails, penalty is at least 15.
+    """
+    residual_ms = abs(residual_drift_sec) * 1000.0
+    penalties: dict[str, float] = {
+        "native": 0.0,
+        "pause_shaping": 2.0,
+        "elastic_trim": 5.0,
+        "micro_tempo": 8.0,
+        "ai_rewrite": 15.0,
+    }
+    p_strategy = penalties.get(str(strategy), 5.0)
+    if anchoring_failed:
+        p_strategy = max(p_strategy, 15.0)
+    score = max(0.0, 100.0 - min(100.0, (residual_ms / 15.0) + p_strategy))
+    return round(score, 2)
+
+
+def resolve_elastic_sync(
+    video_duration: float,
+    audio_duration: float,
+    visual_anchor: VisualAnchor | None = None,
+    max_video_margin: float = 0.60,
+) -> dict[str, Any]:
+    """4-level cascading deterministic elastic sync solver (Phase 4.1).
+
+    Delta D = audio_duration - video_duration
+    Level 1: |Delta D| <= 0.12s -> native (padding adjustment)
+    Level 2: 0.12s < |Delta D| <= 0.45s -> pause_shaping (internal pause adjustment)
+    Level 3: 0.45s < |Delta D| <= 1.20s -> elastic_trim / micro_tempo (atempo 0.96-1.05)
+    Level 4: |Delta D| > 1.20s -> ai_rewrite (script auto-repair trigger)
+    """
+    delta_d = audio_duration - video_duration
+    abs_delta = abs(delta_d)
+    anchoring_failed = False
+    if visual_anchor is not None and visual_anchor.timestamp_sec < 0:
+        anchoring_failed = True
+
+    if abs_delta <= 0.12:
+        # Level 1: Native
+        strategy = "native"
+        video_adjustment = 0.0
+        tempo_factor = 1.0
+        residual_drift_sec = 0.0
+        needs_script_repair = False
+    elif abs_delta <= 0.45:
+        # Level 2: Pause shaping
+        strategy = "pause_shaping"
+        video_adjustment = 0.0
+        tempo_factor = 1.0
+        residual_drift_sec = 0.0
+        needs_script_repair = False
+    elif abs_delta <= 1.20:
+        # Level 3: Elastic trim + micro tempo
+        margin = min(max_video_margin, abs_delta)
+        video_adjustment = math.copysign(margin, delta_d)
+        delta_rem = delta_d - video_adjustment
+
+        if abs(delta_rem) <= 0.05:
+            strategy = "elastic_trim"
+            tempo_factor = 1.0
+            residual_drift_sec = delta_rem
+        else:
+            strategy = "micro_tempo"
+            target_audio_duration = max(0.20, video_duration + video_adjustment)
+            raw_tempo = audio_duration / target_audio_duration if target_audio_duration > 0 else 1.0
+            # Clamp strictly to imperceptible range [0.96, 1.05]
+            tempo_factor = max(0.96, min(1.05, raw_tempo))
+            effective_audio_duration = audio_duration / tempo_factor
+            residual_drift_sec = effective_audio_duration - target_audio_duration
+
+        needs_script_repair = False
+    else:
+        # Level 4: AI rewrite trigger
+        strategy = "ai_rewrite"
+        video_adjustment = 0.0
+        tempo_factor = 1.0
+        residual_drift_sec = delta_d
+        needs_script_repair = True
+
+    drift_ms = round(residual_drift_sec * 1000.0, 2)
+    score = calculate_sync_precision_score(residual_drift_sec, strategy, anchoring_failed=anchoring_failed)
+
+    return {
+        "strategy": strategy,
+        "delta_d": round(delta_d, 3),
+        "video_adjustment": round(video_adjustment, 3),
+        "tempo_factor": round(tempo_factor, 3),
+        "residual_drift_sec": round(residual_drift_sec, 3),
+        "sync_drift_ms": drift_ms,
+        "sync_precision_score": score,
+        "needs_script_repair": needs_script_repair,
+    }
 
 
 def _plain(text: str) -> str:
@@ -305,6 +413,8 @@ def build_narration_beats(
         for idx, (spec, interval) in enumerate(zip(beat_specs, intervals), start=1):
             local_start, local_end, confidence = interval
             text = spec["text"]
+            beat_dur = max(0.20, local_end - local_start)
+            budget_dict = calculate_phonetic_budget(beat_dur)
             beats.append(NarrationBeat(
                 beat_id=spec["beat_id"],
                 block_number=block.number,
@@ -317,6 +427,11 @@ def build_narration_beats(
                 visual_obligation=_visual_obligation(text),
                 timing_source="audio_aligned" if (block.needs_voice and settings.audio_mode != "original") else "estimated",
                 timing_confidence=round(confidence, 3),
+                phonetic_budget=PhoneticBudget(**budget_dict),
+                visual_anchor=VisualAnchor(timestamp_sec=round(global_cursor + local_start + beat_dur / 2.0, 3), description=text),
+                sync_precision_score=100.0,
+                sync_drift_ms=0.0,
+                applied_sync_strategy="native",
             ))
         global_cursor += duration
     return beats
@@ -806,6 +921,7 @@ def _build_original_audio_sync(
                 "vertical_strategy": clip.vertical_strategy,
                 "original_audio_is_important": audio_strategy == "feature",
             }
+            orig_budget = calculate_phonetic_budget(duration)
             result_beats.append(ProfessionalSyncBeat(
                 beat_id=f"b{block.number:03d}_v{clip_index:02d}",
                 block_number=block.number,
@@ -835,6 +951,13 @@ def _build_original_audio_sync(
                 audio_strategy=audio_strategy,
                 shot_style=clip.shot_style,
                 sequence_index=sequence_lookup.get(clip.filename, 0),
+                visual_anchor=VisualAnchor(timestamp_sec=round(source_start + duration / 2.0, 3), description=description or block.title),
+                phonetic_budget=PhoneticBudget(**orig_budget),
+                sync_precision_score=100.0,
+                sync_drift_ms=0.0,
+                applied_sync_strategy="native",
+                visual_complexity="medium",
+                retention_hook_type="standard",
             ))
             cursor += duration
 
@@ -1015,6 +1138,19 @@ def build_professional_sync(
             confidence = max(confidence, 0.58)
             reason = f"{reason} | cobertura contextual segura"
 
+        beat_dur = max(0.20, duration)
+        budget_dict = calculate_phonetic_budget(beat_dur)
+        anchor_val = float(item.get("evidence_timestamps", [round(source_start + beat_dur / 2.0, 3)])[0])
+        anchor_val = max(source_start, min(source_end, anchor_val))
+        anchor = VisualAnchor(
+            timestamp_sec=anchor_val,
+            description=item.get("description", "") or required,
+            trigger_phrase=beat.text.split()[0] if beat.text else "",
+            confidence=float(confidence),
+        )
+        spoken_dur = estimate_spoken_duration_sec(beat.text)
+        sync_res = resolve_elastic_sync(beat_dur, spoken_dur, visual_anchor=anchor)
+
         return ProfessionalSyncBeat(
             beat_id=beat.beat_id,
             block_number=beat.block_number,
@@ -1044,6 +1180,13 @@ def build_professional_sync(
             ),
             shot_style=item.get("shot_style", "normal"),
             sequence_index=_sequence_index(item),
+            visual_anchor=anchor,
+            phonetic_budget=PhoneticBudget(**budget_dict),
+            sync_precision_score=sync_res["sync_precision_score"],
+            sync_drift_ms=sync_res["sync_drift_ms"],
+            applied_sync_strategy=sync_res["strategy"],
+            visual_complexity="high" if critical else ("low" if beat.visual_obligation == "abstract" else "medium"),
+            retention_hook_type="visual_proof" if critical else "standard",
         )
 
     block_preferred_files = {
@@ -1212,6 +1355,8 @@ def build_professional_sync(
                 if critical else f"Sem tomada com confiança suficiente para: '{beat.text}'"
             )
             warnings.append(message)
+            beat_dur = max(0.20, beat.output_end_seconds - beat.output_start_seconds)
+            budget_dict = calculate_phonetic_budget(beat_dur)
             result_beats.append(ProfessionalSyncBeat(
                 beat_id=beat.beat_id,
                 block_number=beat.block_number,
@@ -1226,6 +1371,13 @@ def build_professional_sync(
                 timing_confidence=beat.timing_confidence,
                 match_reason=message,
                 verification="failed",
+                phonetic_budget=PhoneticBudget(**budget_dict),
+                visual_anchor=VisualAnchor(timestamp_sec=0.0, description=required),
+                sync_precision_score=50.0,
+                sync_drift_ms=0.0,
+                applied_sync_strategy="native",
+                visual_complexity="medium",
+                retention_hook_type="standard",
             ))
         else:
             result_beats.append(selected)

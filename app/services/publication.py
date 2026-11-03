@@ -5,6 +5,7 @@ import unicodedata
 from typing import Any
 
 from app.models import EditPlan, PublicationContext, PublicationPackage, PublicationSource
+from app.services.description_composer import compose_youtube_chapters, format_seconds_to_timestamp
 
 
 _TITLE_STOP = {

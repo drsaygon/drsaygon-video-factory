@@ -253,15 +253,28 @@ def analyze_video(
     logger: Callable[[str], None],
     context_text: str = "",
 ) -> tuple[VideoAnalysis, str]:
+    from app.services.ffmpeg import extract_physical_media_map, apply_snap_to_cut
+    from app.services.voice_profile import calculate_phonetic_budget
+    from app.models import VisualAnchor, PhoneticBudget
+
+    physical_map = extract_physical_media_map(proxy_path)
+    safe_cuts = physical_map.get("safe_cut_timestamps", [])
+
     with get_client() as client:
         logger(f"Enviando proxy de evidencias para o Gemini: {proxy_path.name}")
         uploaded = client.files.upload(file=str(proxy_path))
         try:
             uploaded = wait_until_active(client, uploaded, logger)
+            physical_ctx = (
+                f"\n\nSINAIS FÍSICOS REAIS DE CENA E ÁUDIO (FFMPEG):\n"
+                f"- Pontos de corte seguro ('Cortes Ouro'): {json.dumps(safe_cuts)}\n"
+                f"- Janelas de silêncio: {json.dumps(physical_map.get('silence_windows', []))}\n"
+                f"Priorize os timestamps de corte seguro para início/fim das cenas."
+            )
             prompt = prompt_text.format(
                 filename=original_filename,
                 duration_seconds=f"{original_duration:.3f}",
-                project_context=context_text or "[Sem contexto adicional]",
+                project_context=(context_text or "[Sem contexto adicional]") + physical_ctx,
             )
             contents = [
                 _video_part(uploaded, GEMINI_ANALYSIS_FPS),
@@ -276,6 +289,28 @@ def analyze_video(
             )
             result.filename = original_filename
             result.duration_seconds = original_duration
+
+            # Post-processing: Magnetic Snap-to-Cut + VisualAnchor + PhoneticBudget
+            for seg in result.segments:
+                if safe_cuts:
+                    new_start = apply_snap_to_cut(seg.start_seconds, safe_cuts, threshold=0.40)
+                    new_end = apply_snap_to_cut(seg.end_seconds, safe_cuts, threshold=0.40)
+                    if new_end > new_start + 0.2:
+                        seg.start_seconds = new_start
+                        seg.end_seconds = new_end
+
+                duration = max(0.3, seg.end_seconds - seg.start_seconds)
+                if not seg.visual_anchor or not (seg.start_seconds <= seg.visual_anchor.timestamp_sec <= seg.end_seconds):
+                    anchor_time = seg.evidence_timestamps[0] if (seg.evidence_timestamps and seg.start_seconds <= seg.evidence_timestamps[0] <= seg.end_seconds) else round(seg.start_seconds + duration * 0.45, 3)
+                    seg.visual_anchor = VisualAnchor(
+                        timestamp_sec=anchor_time,
+                        trigger_phrase=seg.description[:80] if seg.description else "",
+                        action_label=seg.event_kind or "evidencia_cena",
+                        confidence=seg.confidence,
+                    )
+                budget_data = calculate_phonetic_budget(duration)
+                seg.phonetic_budget = PhoneticBudget(**budget_data)
+
             return result, model
         finally:
             try:

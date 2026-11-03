@@ -632,3 +632,185 @@ def extract_grayscale_frames(
     if process.returncode != 0:
         raise MediaCommandError((process.stderr or b"").decode("utf-8", errors="replace")[-4000:])
     return process.stdout or b"", width, height, fps
+
+
+
+_SCDET_RE = re.compile(r"lavfi\.scd\.score:\s*([0-9.]+).*?lavfi\.scd\.time:\s*([0-9.]+)")
+_VOL_MEAN_RE = re.compile(r"mean_volume:\s*(-?[0-9.]+)\s*dB")
+_VOL_MAX_RE = re.compile(r"max_volume:\s*(-?[0-9.]+)\s*dB")
+_SILENCE_START_NUM_RE = re.compile(r"silence_start:\s*([0-9.]+)")
+_SILENCE_END_NUM_RE = re.compile(r"silence_end:\s*([0-9.]+)")
+
+
+def extract_physical_media_map(
+    video_path: str | Path,
+    scene_threshold: float = 0.28,
+    silence_db: float = -35.0,
+    min_silence_sec: float = 0.25,
+) -> dict[str, Any]:
+    """Deterministic physical analysis of video and audio tracks via FFmpeg.
+
+    Extracts visual cut boundaries, audio silence windows, volume levels,
+    and calculates surgical cut points ('Cortes Ouro') before AI processing.
+    """
+    path = Path(video_path)
+    duration = 0.0
+    has_audio = True
+
+    try:
+        info = probe_media(path)
+        duration = max(0.0, float(info.duration))
+        has_audio = bool(info.has_audio)
+    except Exception:
+        try:
+            duration = max(0.0, audio_duration(path))
+        except Exception:
+            duration = 10.0
+
+    cut_points: list[dict[str, Any]] = []
+
+    # 1. Visual cuts detection via scdet
+    try:
+        scd_proc = subprocess.run(
+            [
+                FFMPEG_BIN, "-hide_banner", "-nostats", "-i", str(path),
+                "-vf", f"scdet=threshold={scene_threshold:.3f}:sc_pass=1",
+                "-an", "-f", "null", "-",
+            ],
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW") else 0,
+        )
+        scd_log = scd_proc.stderr or ""
+        for m in _SCDET_RE.finditer(scd_log):
+            score_val = float(m.group(1))
+            norm_score = min(1.0, score_val if score_val <= 1.0 else score_val / 100.0)
+            time_val = float(m.group(2))
+            if 0.0 <= time_val <= duration + 0.5:
+                cut_points.append({
+                    "timestamp": round(time_val, 3),
+                    "score": round(norm_score, 3),
+                    "cut_type": "scene_change",
+                })
+    except Exception:
+        pass
+
+    # 2. Audio silences & volume levels detection
+    silence_windows: list[dict[str, Any]] = []
+    mean_volume_db = -20.0
+    max_volume_db = 0.0
+
+    if has_audio:
+        try:
+            sil_proc = subprocess.run(
+                [
+                    FFMPEG_BIN, "-hide_banner", "-nostats", "-i", str(path),
+                    "-af", f"silencedetect=noise={silence_db:g}dB:d={min_silence_sec:.3f},volumedetect",
+                    "-vn", "-f", "null", "-",
+                ],
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW") else 0,
+            )
+            sil_log = sil_proc.stderr or ""
+            starts = [float(m.group(1)) for m in _SILENCE_START_NUM_RE.finditer(sil_log)]
+            ends = [float(m.group(1)) for m in _SILENCE_END_NUM_RE.finditer(sil_log)]
+
+            for s_in in starts:
+                f_ends = [e for e in ends if e >= s_in]
+                s_out = f_ends[0] if f_ends else duration
+                silence_windows.append({
+                    "start": round(s_in, 3),
+                    "end": round(s_out, 3),
+                    "duration": round(max(0.0, s_out - s_in), 3),
+                })
+
+            vol_mean_match = _VOL_MEAN_RE.search(sil_log)
+            if vol_mean_match:
+                mean_volume_db = float(vol_mean_match.group(1))
+
+            vol_max_match = _VOL_MAX_RE.search(sil_log)
+            if vol_max_match:
+                max_volume_db = float(vol_max_match.group(1))
+        except Exception:
+            pass
+
+    # 3. Surgical safe cut points ('Cortes Ouro')
+    safe_cuts: set[float] = set()
+    pad = 0.15
+
+    for cp in cut_points:
+        tv = cp["timestamp"]
+        paired = False
+        for sw in silence_windows:
+            sin = sw["start"]
+            sout = sw["end"]
+            if sin <= tv <= sout:
+                safe_cuts.add(round(tv, 3))
+                paired = True
+                break
+            if abs(tv - sin) <= 0.35:
+                gold = max(0.0, min(duration, sin + pad))
+                safe_cuts.add(round(gold, 3))
+                paired = True
+                break
+            if abs(tv - sout) <= 0.35:
+                gold = max(0.0, min(duration, max(sin, sout - pad)))
+                safe_cuts.add(round(gold, 3))
+                paired = True
+                break
+        if not paired and (not has_audio or not silence_windows):
+            safe_cuts.add(round(tv, 3))
+
+    # Safe deterministic fallback if no cuts detected or offline synthetic test
+    if not safe_cuts:
+        step = 5.0
+        cur = step
+        while cur < (duration if duration > 1.0 else 10.0):
+            safe_cuts.add(round(cur, 3))
+            cur += step
+
+    safe_cut_timestamps = sorted([c for c in safe_cuts if 0.0 < c < (duration if duration > 0.5 else 999999.0)])
+    if not safe_cut_timestamps and duration > 1.0:
+        safe_cut_timestamps = [round(min(5.0, duration / 2.0), 3)]
+
+    return {
+        "duration": round(duration, 3),
+        "cut_points": cut_points,
+        "silence_windows": silence_windows,
+        "mean_volume_db": round(mean_volume_db, 2),
+        "max_volume_db": round(max_volume_db, 2),
+        "safe_cut_timestamps": safe_cut_timestamps,
+    }
+
+
+def apply_snap_to_cut(timestamp: float, safe_cuts: list[float], threshold: float = 0.40) -> float:
+    """Snap a timestamp to the closest physical safe cut point within threshold distance."""
+    if not safe_cuts:
+        return round(float(timestamp), 3)
+    best_diff = float(threshold) + 0.001
+    snapped = float(timestamp)
+    for cut in safe_cuts:
+        diff = abs(timestamp - cut)
+        if diff <= threshold and diff < best_diff:
+            best_diff = diff
+            snapped = cut
+    return round(snapped, 3)
+
+
+def apply_audio_tempo(input_wav: Path, output_wav: Path, tempo_factor: float) -> Path:
+    """Apply micro-tempo adjustment to speech audio via FFmpeg atempo (0.96 - 1.05)."""
+    output_wav.parent.mkdir(parents=True, exist_ok=True)
+    clamped_tempo = max(0.5, min(2.0, float(tempo_factor)))
+    run_command([
+        FFMPEG_BIN, "-y", "-i", str(input_wav),
+        "-af", f"atempo={clamped_tempo:.4f}",
+        "-c:a", "pcm_s16le", str(output_wav),
+    ])
+    return output_wav

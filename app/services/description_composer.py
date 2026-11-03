@@ -168,3 +168,50 @@ def compose_description(
     if kept:
         return "\n\n".join(kept)
     return text[:max_chars].rstrip()
+
+
+def format_seconds_to_timestamp(seconds: float) -> str:
+    """Format seconds into YouTube timestamp (MM:SS or HH:MM:SS)."""
+    total_sec = max(0, int(round(seconds)))
+    hours = total_sec // 3600
+    minutes = (total_sec % 3600) // 60
+    secs = total_sec % 60
+    if hours > 0:
+        return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+    return f"{minutes:02d}:{secs:02d}"
+
+
+def compose_youtube_chapters(items: list[Any], default_intro: str = "Início") -> list[str]:
+    """Generate YouTube chapters starting strictly at 00:00 using post-sync timings (Phase 7.1)."""
+    if not items:
+        return ["00:00 - Início"]
+    chapters: list[str] = []
+    first_title = ""
+    for item in items:
+        first_title = getattr(item, "title", None) or getattr(item, "reason", None)
+        if isinstance(item, dict):
+            first_title = item.get("title", item.get("reason", ""))
+        if first_title:
+            break
+    chapters.append(f"00:00 - {first_title or default_intro}")
+
+    for item in items:
+        start_sec = 0.0
+        if hasattr(item, "output_start_seconds"):
+            start_sec = float(item.output_start_seconds)
+        elif hasattr(item, "start_seconds"):
+            start_sec = float(item.start_seconds)
+        elif isinstance(item, dict):
+            start_sec = float(item.get("output_start_seconds", item.get("start_seconds", 0.0)))
+
+        title = getattr(item, "title", None) or getattr(item, "reason", None) or getattr(item, "evidence_description", "")
+        if isinstance(item, dict):
+            title = item.get("title", item.get("reason", item.get("evidence_description", "")))
+        title = str(title).strip()
+
+        if start_sec >= 10.0 and title:
+            ts = format_seconds_to_timestamp(start_sec)
+            line = f"{ts} - {title}"
+            if line not in chapters:
+                chapters.append(line)
+    return chapters

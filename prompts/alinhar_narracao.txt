@@ -20,6 +20,7 @@ REGRAS ANTI-ALUCINAÇÃO
 - speech_start_seconds e speech_end_seconds são relativos ao início DESTE arquivo de áudio.
 - Não use estimativa proporcional pelo tamanho do texto: use o que realmente é ouvido.
 - Pequenas pausas entre frases não precisam pertencer à fala; o aplicativo fará a partição visual depois.
+- Se o tempo estimado de fala exceder a janela visual da cena, identifique os fonemas excedentes para corte de palavras gordurosas, preservando intacta a palavra-gatilho vinculada ao evento visual.
 - Se uma expressão começa no final de uma frase e continua sem pausa, ainda assim estime a transição sonora real.
 - confidence representa sua confiança no alinhamento daquele trecho.
 - Nunca use timestamps fora de 0 até {duration_seconds}.

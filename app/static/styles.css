@@ -180,3 +180,12 @@ button:disabled,.primary:disabled,.secondary:disabled{cursor:not-allowed;opacity
 .player-status{margin-top:8px;color:var(--muted);font-size:12px;min-height:18px}.manual-evidence-lab video{min-height:220px;object-fit:contain}
 
 .player-helper-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.player-helper-row .player-status{flex:1}.secondary.compact{padding:7px 10px;font-size:12px}
+
+
+/* Telemetria e Badges de Sincronismo v7.0 */
+.sync-score-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;margin-left:6px}
+.sync-score-high{background:rgba(34,197,94,0.18);color:#16a34a;border:1px solid rgba(34,197,94,0.35)}
+.sync-score-med{background:rgba(234,179,8,0.18);color:#ca8a04;border:1px solid rgba(234,179,8,0.35)}
+.sync-score-low{background:rgba(239,68,68,0.18);color:#dc2626;border:1px solid rgba(239,68,68,0.35)}
+.budget-badge{display:inline-flex;align-items:center;padding:2px 6px;border-radius:8px;font-size:11px;background:#f1f5f9;color:#475569;margin-left:4px}
+.anchor-badge{display:inline-flex;align-items:center;padding:2px 6px;border-radius:8px;font-size:11px;background:#eff6ff;color:#2563eb;margin-left:4px}

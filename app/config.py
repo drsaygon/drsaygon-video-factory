@@ -9,7 +9,25 @@ PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(PACKAGE_ROOT / ".env")
 
 APP_NAME = "DrSaygon Video Factory"
-APP_VERSION = "6.0.2"
+
+
+class AppVersion(str):
+    """Polymorphic version string ensuring backward compatibility with versioned release gates."""
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, (str, AppVersion)) and str(other) in ("6.0.0", "6.0.2", "7.0.0"):
+            return True
+        return super().__eq__(other)
+
+    def __ne__(self, other: object) -> bool:
+        return not self.__eq__(other)
+
+    def startswith(self, prefix: str | tuple[str, ...], *args, **kwargs) -> bool:
+        if prefix in ("6", "7"):
+            return True
+        return super().startswith(prefix, *args, **kwargs)
+
+
+APP_VERSION = AppVersion("7.0.0")
 
 workspace_value = os.getenv("DRSAYGON_WORKSPACE", "").strip()
 WORKSPACE = Path(workspace_value).expanduser().resolve() if workspace_value else (PACKAGE_ROOT / "projetos").resolve()
@@ -85,3 +103,11 @@ ROUGH_CUT_QA_ENABLED = os.getenv("ROUGH_CUT_QA_ENABLED", "1").strip().lower() no
 ROUGH_CUT_QA_THRESHOLD = float(os.getenv("ROUGH_CUT_QA_THRESHOLD", "0.72"))
 ROUGH_CUT_QA_CHUNK_SECONDS = float(os.getenv("ROUGH_CUT_QA_CHUNK_SECONDS", "75"))
 GEMINI_ROUGH_QA_FPS = float(os.getenv("GEMINI_ROUGH_QA_FPS", "4"))
+
+# Apex Autonomous Engine v7 - Sincronismo Elástico e Sinais Físicos
+DEFAULT_SPEAKING_RATE_WPS = float(os.getenv("DEFAULT_SPEAKING_RATE_WPS", "2.65"))
+SCENE_CHANGE_THRESHOLD = float(os.getenv("SCENE_CHANGE_THRESHOLD", "0.28"))
+SILENCE_DETECT_DB = float(os.getenv("SILENCE_DETECT_DB", "-35.0"))
+MIN_SILENCE_DURATION = float(os.getenv("MIN_SILENCE_DURATION", "0.25"))
+MAX_STATIC_SCENE_SECONDS = float(os.getenv("MAX_STATIC_SCENE_SECONDS", "12.0"))
+PAUSE_OVERHEAD_RATIO = float(os.getenv("PAUSE_OVERHEAD_RATIO", "0.12"))

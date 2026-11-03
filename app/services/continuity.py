@@ -5,6 +5,7 @@ from pathlib import Path
 from statistics import median
 from typing import Any
 
+from app.config import MAX_STATIC_SCENE_SECONDS
 from app.models import EditQualityReport, EditingStyle, ProfessionalSyncBeat, VisualRun
 from app.services.ffmpeg import probe_media
 
@@ -279,6 +280,13 @@ def _make_run(
         shot_style="hold" if len(group) > 1 else first.shot_style,
         sequence_index=first.sequence_index,
         allows_replay=any(_allows_replay(b.text) for b in group),
+        visual_anchor=first.visual_anchor,
+        phonetic_budget=first.phonetic_budget,
+        sync_precision_score=round(sum(getattr(b, "sync_precision_score", 100.0) for b in group) / max(1, len(group)), 2),
+        sync_drift_ms=round(sum(getattr(b, "sync_drift_ms", 0.0) for b in group) / max(1, len(group)), 2),
+        applied_sync_strategy=getattr(first, "applied_sync_strategy", "native") or "native",
+        visual_complexity=getattr(first, "visual_complexity", "medium") or "medium",
+        retention_hook_type=getattr(first, "retention_hook_type", "standard") or "standard",
     )
 
 
@@ -687,6 +695,46 @@ def _range_overlap_ratio(a: VisualRun, b: VisualRun) -> float:
     return overlap / shorter
 
 
+def audit_retention_pacing(
+    runs: list[VisualRun],
+    beats: list[ProfessionalSyncBeat] | None = None,
+    max_static_seconds: float = MAX_STATIC_SCENE_SECONDS,
+) -> list[str]:
+    """Audit video pacing for retention and narrative continuity (Phase 5.1).
+
+    Ensures no static scene sequence exceeds max_static_seconds (12.0s) without visual variation,
+    and checks narrative coherence between consecutive beats.
+    """
+    warnings: list[str] = []
+    for run in runs:
+        duration = run.duration
+        is_dynamic = (
+            getattr(run, "visual_complexity", "medium") == "high"
+            or getattr(run, "retention_hook_type", "standard") in {"pattern_interrupt", "visual_proof", "climax"}
+            or len(run.event_ids) > 1
+            or run.shot_style in {"demo", "action"}
+        )
+        if duration > max_static_seconds and not is_dynamic:
+            warnings.append(
+                f"Ritmo de retenção: Tomada {run.run_id} ({duration:.1f}s) excede {max_static_seconds:.1f}s estáticos; "
+                "recomendada variação visual, reenquadramento dinâmico ou evidência dirigida."
+            )
+
+    if beats and len(beats) > 1:
+        for prev_beat, next_beat in zip(beats, beats[1:]):
+            prev_words = prev_beat.text.strip().split()
+            next_words = next_beat.text.strip().split()
+            if prev_words and next_words:
+                prev_first = prev_words[0].lower().strip(".,;:?!")
+                next_first = next_words[0].lower().strip(".,;:?!")
+                if prev_first == next_first and len(prev_first) > 3:
+                    warnings.append(
+                        f"Coerência narrativa: repetição de termo inicial '{prev_first}' entre batidas consecutivas "
+                        f"({prev_beat.beat_id} -> {next_beat.beat_id})."
+                    )
+    return warnings
+
+
 def audit_visual_runs(
     runs: list[VisualRun],
     style: EditingStyle,
@@ -706,6 +754,8 @@ def audit_visual_runs(
     overlaps = 0
     ping_pong = 0
     warnings: list[str] = []
+    retention_warnings = audit_retention_pacing(runs, None, max_static_seconds=MAX_STATIC_SCENE_SECONDS)
+    warnings.extend(retention_warnings)
     for a, b in zip(runs, runs[1:]):
         shared_event = bool(set(a.event_ids) & set(b.event_ids))
         long_block_replay = (
