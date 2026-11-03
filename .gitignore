@@ -71,3 +71,6 @@ htmlcov/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Prompt do Arquiteto Chefe
+prompts/arquiteto-chefe/
