@@ -39,3 +39,4 @@ FOCO DESTA VERSAO
 - Novo teste de ponta a ponta `test_v700_apex_intelligence.py` validando os 4 eixos da inteligência v7.
 - Novo `release_gate_v700.py` executando 22 testes de regressão automatizados com 100% de aprovação.
 - Preservação total de compatibilidade retroativa com os gates v6.0.0 e v6.0.2.
+
