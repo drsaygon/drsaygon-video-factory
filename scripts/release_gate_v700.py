@@ -38,6 +38,7 @@ TESTS = [
     "test_v602_evidence_player.py",
     "test_v602_manual_recording_smart_trim.py",
     "test_v700_apex_intelligence.py",
+    "test_v800_autoheal_and_bilingual_tts.py",
 ]
 
 
@@ -101,6 +102,19 @@ def static_gate() -> None:
         raise RuntimeError("Gerador de capítulos cravados 00:00 ausente em description_composer.py")
     if "sync-score-badge" not in js or "sync-score-badge" not in css:
         raise RuntimeError("Badge de telemetria de sync score ausente na UI")
+
+    # Phase 8: Smart Duration Auto-Healer & Bilingual Technical TTS
+    voice_client_code = (ROOT / "app/services/voice_client.py").read_text(encoding="utf-8")
+    voice_server_code = (ROOT / "voice/server.py").read_text(encoding="utf-8")
+    gemini_code = (ROOT / "app/services/gemini.py").read_text(encoding="utf-8")
+    if "def auto_heal_scene_duration_mismatch" not in continuity_code:
+        raise RuntimeError("Smart Duration Auto-Healer ausente em continuity.py")
+    if "def render_punch_in_composite_clip" not in ffmpeg_code:
+        raise RuntimeError("Renderizador de Dynamic Punch-In Jump-Cut ausente em ffmpeg.py")
+    if "def normalize_bilingual_tech_text" not in voice_client_code or "def normalize_bilingual_tech_text" not in voice_server_code:
+        raise RuntimeError("Normalizador fonético técnico bilíngue ausente no serviço de voz")
+    if "class ApexGeminiService" not in gemini_code:
+        raise RuntimeError("ApexGeminiService ausente em gemini.py")
 
 
 def main() -> int:

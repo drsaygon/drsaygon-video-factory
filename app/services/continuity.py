@@ -8,6 +8,9 @@ from typing import Any
 from app.config import MAX_STATIC_SCENE_SECONDS
 from app.models import EditQualityReport, EditingStyle, ProfessionalSyncBeat, VisualRun
 from app.services.ffmpeg import probe_media
+import shutil
+import subprocess
+from app.config import FFMPEG_BIN, FFPROBE_BIN
 
 
 REPLAY_TERMS = (
@@ -802,3 +805,146 @@ def audit_visual_runs(
         warnings=warnings,
         repairs=repairs,
     )
+
+
+MAX_TRANSPARENT_AUDIO_SPEEDUP = 1.15  # Ate 15% mais agil sem perda de naturalidade
+
+
+def _tighten_narration_audio(
+    audio_path: Path, target_duration: float, speed_ratio: float
+) -> tuple[bool, float]:
+    """Aplica remocao de pausas longas e ajuste fino de atempo via FFmpeg in-place."""
+    if not audio_path or not audio_path.exists():
+        return False, target_duration
+
+    clamped_ratio = max(1.01, min(1.25, speed_ratio))
+    tmp_out = audio_path.with_suffix(".healed.wav")
+
+    af_filter = (
+        "silenceremove=start_periods=1:start_duration=0.03:start_threshold=-42dB:"
+        "stop_periods=-1:stop_duration=0.14:stop_threshold=-42dB,"
+        f"atempo={clamped_ratio:.4f}"
+    )
+
+    cmd = [
+        FFMPEG_BIN, "-y", "-hide_banner", "-loglevel", "error",
+        "-i", str(audio_path),
+        "-af", af_filter,
+        str(tmp_out),
+    ]
+    res = subprocess.run(cmd, capture_output=True)
+    if res.returncode != 0 or not tmp_out.exists():
+        return False, target_duration
+
+    shutil.move(str(tmp_out), str(audio_path))
+
+    probe = subprocess.run(
+        [
+            FFPROBE_BIN, "-v", "error", "-show_entries", "format=duration",
+            "-of", "default=noprint_wrappers=1:nokey=1", str(audio_path),
+        ],
+        capture_output=True, text=True,
+    )
+    try:
+        actual_dur = float(probe.stdout.strip())
+    except ValueError:
+        actual_dur = target_duration
+
+    return True, actual_dur
+
+
+def auto_heal_scene_duration_mismatch(
+    scene_id: str,
+    take_id: str,
+    clip_duration: float,
+    required_duration: float,
+    audio_path: Path | None = None,
+    source_video_duration: float = 0.0,
+    clip_in_point: float = 0.0,
+    clip_out_point: float = 0.0,
+) -> dict[str, Any]:
+    """Resolve automaticamente divergencias onde o audio da narracao ficou mais longo
+    que a tomada de video (ex: r004 possui 8.41s, mas precisa cobrir 9.33s),
+    evitando abortar o Autopilot aos 88%.
+    """
+    deficit = required_duration - clip_duration
+    if deficit <= 0.02:
+        return {
+            "healed": True,
+            "strategy": "exact_fit",
+            "effective_clip_duration": clip_duration,
+            "effective_audio_duration": required_duration,
+            "in_point": clip_in_point,
+            "out_point": clip_out_point,
+        }
+
+    # --------------------------------------------------------------------------
+    # ESTAGIO 1: Expandir handles da tomada original se houver margem no arquivo
+    # --------------------------------------------------------------------------
+    if source_video_duration > clip_duration and clip_out_point > 0:
+        available_tail = max(0.0, source_video_duration - clip_out_point)
+        available_head = max(0.0, clip_in_point)
+        total_handle = available_tail + available_head
+
+        if total_handle >= deficit:
+            add_tail = min(available_tail, deficit)
+            rem = deficit - add_tail
+            sub_head = min(available_head, rem)
+            new_in = clip_in_point - sub_head
+            new_out = clip_out_point + add_tail
+            return {
+                "healed": True,
+                "strategy": "handle_expansion",
+                "effective_clip_duration": new_out - new_in,
+                "effective_audio_duration": required_duration,
+                "in_point": round(new_in, 3),
+                "out_point": round(new_out, 3),
+            }
+
+    # --------------------------------------------------------------------------
+    # ESTAGIO 2: Compactacao de silencios + Micro-ajuste de cadencia (atempo)
+    # Ex: 9.33s -> 8.41s exige apenas ~1.109x (imperceptivel e melhora o ritmo)
+    # --------------------------------------------------------------------------
+    target_audio_duration = max(0.5, clip_duration - 0.05)
+    speed_ratio = required_duration / target_audio_duration
+
+    if speed_ratio <= MAX_TRANSPARENT_AUDIO_SPEEDUP and audio_path and audio_path.exists():
+        success, new_audio_dur = _tighten_narration_audio(
+            audio_path=audio_path,
+            target_duration=target_audio_duration,
+            speed_ratio=speed_ratio,
+        )
+        if success and new_audio_dur <= clip_duration:
+            return {
+                "healed": True,
+                "strategy": f"smart_audio_pacing_{speed_ratio:.2f}x",
+                "effective_clip_duration": clip_duration,
+                "effective_audio_duration": new_audio_dur,
+                "in_point": clip_in_point,
+                "out_point": clip_out_point,
+            }
+
+    # --------------------------------------------------------------------------
+    # ESTAGIO 3: Ajuste hibrido (Acelera audio em ate 1.15x + Dynamic Punch-In B-Roll)
+    # --------------------------------------------------------------------------
+    if audio_path and audio_path.exists():
+        capped_speed = MAX_TRANSPARENT_AUDIO_SPEEDUP
+        _, new_audio_dur = _tighten_narration_audio(
+            audio_path=audio_path,
+            target_duration=required_duration / capped_speed,
+            speed_ratio=capped_speed,
+        )
+    else:
+        new_audio_dur = required_duration
+
+    return {
+        "healed": True,
+        "strategy": "composite_punch_in_broll",
+        "effective_clip_duration": new_audio_dur,
+        "effective_audio_duration": new_audio_dur,
+        "requires_dynamic_punch_in": True,
+        "primary_take_duration": clip_duration,
+        "secondary_subtake_duration": round(max(0.0, new_audio_dur - clip_duration), 3),
+        "in_point": clip_in_point,
+        "out_point": clip_out_point,
+    }

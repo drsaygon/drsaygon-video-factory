@@ -19,6 +19,8 @@ from app.config import (
     GEMINI_API_KEY,
     GEMINI_MODEL,
     GEMINI_MODEL_FALLBACKS,
+    GEMINI_MODEL_PRIMARY,
+    GEMINI_FALLBACK_MODELS,
     GEMINI_PRECISION_MODEL,
     GEMINI_VERIFY_FPS,
     GEMINI_ROUGH_QA_FPS,
@@ -103,6 +105,49 @@ def parse_structured_response(text: str, schema: type[T]) -> T:
             return schema.model_validate(json.loads(cleaned))
         except Exception as nested:
             raise GeminiResponseError(f"Resposta JSON invalida: {error}") from nested
+
+
+class ApexGeminiService:
+    def __init__(self, api_key: str | None = None):
+        key = api_key or GEMINI_API_KEY
+        self.client = genai.Client(api_key=key) if key else genai.Client()
+        self.primary_model = GEMINI_MODEL_PRIMARY
+
+    def generate_structured_json(
+        self,
+        contents: list,
+        system_instruction: str,
+        response_schema: type | dict | None = None,
+        temperature: float = 0.2,
+    ) -> str:
+        """Executa chamada ao Gemini 3.8+ com JSON Schema garantido e fallback resiliente."""
+        models_to_try = [self.primary_model] + [
+            m for m in GEMINI_FALLBACK_MODELS if m != self.primary_model
+        ]
+        last_error = None
+
+        for model_name in models_to_try:
+            try:
+                config_kwargs: dict[str, Any] = {
+                    "system_instruction": system_instruction,
+                    "temperature": temperature,
+                    "response_mime_type": "application/json",
+                }
+                if response_schema is not None:
+                    config_kwargs["response_schema"] = response_schema
+
+                response = self.client.models.generate_content(
+                    model=model_name,
+                    contents=contents,
+                    config=types.GenerateContentConfig(**config_kwargs),
+                )
+                if response and response.text:
+                    return response.text
+            except Exception as exc:
+                last_error = exc
+                continue
+
+        raise RuntimeError(f"Falha ao consultar Gemini 3.8+: {last_error}")
 
 
 def _structured_config(schema: type[T], max_output_tokens: int) -> types.GenerateContentConfig:

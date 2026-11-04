@@ -155,6 +155,8 @@ class ScriptBlock(BaseModel):
     editing_note: str = ""
     pacing: Literal["fast", "normal", "slow", "hold"] = "normal"
     block_type: Literal["hook", "body", "demo", "verdict", "cta", "ending"] = "body"
+    narration_text: Optional[str] = None
+    tts_phonetic_text: Optional[str] = None
     visual_anchor: Optional[VisualAnchor] = None
     phonetic_budget: Optional[PhoneticBudget] = None
     sync_precision_score: float = 100.0
@@ -167,6 +169,12 @@ class ScriptBlock(BaseModel):
     @classmethod
     def normalize_narration(cls, value: str) -> str:
         return " ".join(value.split())
+
+    @model_validator(mode="after")
+    def sync_dual_narration_fields(self) -> "ScriptBlock":
+        if not self.narration and self.narration_text:
+            self.narration = " ".join(self.narration_text.split())
+        return self
 
     @property
     def needs_voice(self) -> bool:
@@ -192,6 +200,7 @@ class NarrationBeat(BaseModel):
     block_number: int = Field(ge=1)
     beat_number: int = Field(ge=1)
     text: str = Field(min_length=1, max_length=1200)
+    tts_phonetic_text: Optional[str] = None
     output_start_seconds: float = Field(ge=0)
     output_end_seconds: float = Field(ge=0.001)
     required_observation: str = ""

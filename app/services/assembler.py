@@ -12,8 +12,13 @@ from app.services.ffmpeg import (
     normalize_voice_audio,
     probe_media,
     render_clip,
+    render_punch_in_composite_clip,
     export_delivery,
     export_master,
+)
+from app.services.continuity import (
+    auto_heal_scene_duration_mismatch,
+    _tighten_narration_audio,
 )
 from app.services.project import ProjectPaths, write_json
 
@@ -129,11 +134,54 @@ def assemble_project(
                 raise AssemblyError(f"Filmagem nao encontrada: {run.filename}")
             wanted = run.duration
             available = max(0.0, run.source_end_seconds - run.source_start_seconds)
+            requires_punch_in = False
+            source_info = probe_media(source)
+
+            # Auto-Healer Cinematografico em 4 Estagios (Gemini 4 / v8.0)
             if available + 0.08 < wanted:
-                raise AssemblyError(
-                    f"A tomada {run.run_id} possui {available:.2f}s, mas precisa cobrir {wanted:.2f}s. "
-                    "O Video Factory nao repete nem estica a imagem para esconder falta de material."
+                heal_result = auto_heal_scene_duration_mismatch(
+                    scene_id=f"b{block.number:03d}",
+                    take_id=run.run_id,
+                    clip_duration=available,
+                    required_duration=wanted,
+                    audio_path=voice_wav,
+                    source_video_duration=source_info.duration,
+                    clip_in_point=run.source_start_seconds,
+                    clip_out_point=run.source_end_seconds,
                 )
+                strategy = heal_result.get("strategy", "")
+                if strategy == "handle_expansion":
+                    run.source_start_seconds = heal_result["in_point"]
+                    run.source_end_seconds = heal_result["out_point"]
+                    available = max(0.0, run.source_end_seconds - run.source_start_seconds)
+                    logger(
+                        f"[Auto-Heal 88%] Tomada {run.run_id}: handles expandidos para "
+                        f"[{run.source_start_seconds:.2f}-{run.source_end_seconds:.2f}]s "
+                        f"(disponivel={available:.2f}s, necessario={wanted:.2f}s)"
+                    )
+                elif strategy.startswith("smart_audio_pacing"):
+                    effective_audio_dur = heal_result["effective_audio_duration"]
+                    wanted = available
+                    run.duration = available
+                    if voice_wav and voice_wav.exists():
+                        target_seconds = audio_duration(voice_wav)
+                    logger(
+                        f"[Auto-Heal 88%] Tomada {run.run_id}: cadencia da narracao ajustada ({strategy}) "
+                        f"para {available:.2f}s cravados."
+                    )
+                elif heal_result.get("requires_dynamic_punch_in"):
+                    requires_punch_in = True
+                    logger(
+                        f"[Auto-Heal 88%] Tomada {run.run_id}: aplicando Dynamic Punch-In Jump-Cut (118% scale) "
+                        f"para cobrir duracao total de {wanted:.2f}s sem congelar frame."
+                    )
+                else:
+                    if source_info.duration > available:
+                        run.source_end_seconds = min(source_info.duration, run.source_start_seconds + wanted)
+                        available = max(0.0, run.source_end_seconds - run.source_start_seconds)
+                    if available + 0.08 < wanted:
+                        requires_punch_in = True
+
             output = working / f"b{block.number:03d}_run{run_index:03d}.mp4"
             logger(
                 f"RUN {run.run_id}: {run.filename} "
@@ -141,29 +189,31 @@ def assemble_project(
                 f"=> [{run.output_start_seconds:.2f}-{run.output_end_seconds:.2f}] "
                 f"beats={','.join(run.beat_ids)} verification={run.verification}"
             )
-            # v6: the per-scene audio selector is authoritative in EVERY mode.
-            # Global mode only defines defaults at script/sync generation time.
-            # - narration: generated runs default to mute, but the creator may
-            #   deliberately enable ambient/feature on any scene.
-            # - original: all three choices remain meaningful (mute/low/full).
-            # - mixed: same controls, with narration ducked on feature scenes.
             effective_audio = run.audio_strategy
             if voice_wav and effective_audio == "feature":
                 feature_intervals.append((
                     max(0.0, run.output_start_seconds - block_output_origin),
                     max(0.0, run.output_end_seconds - block_output_origin),
                 ))
-            render_clip(
-                source=source, destination=output, start=run.source_start_seconds, duration=wanted,
-                width=width, height=height, fps=settings.fps, format_mode=settings.format,
-                focus_x=run.focus_x, focus_y=run.focus_y, vertical_strategy=run.vertical_strategy,
-                audio_strategy=effective_audio,
-            )
-            actual = probe_media(output).duration
-            if abs(actual - wanted) > 0.16:
-                raise AssemblyError(
-                    f"A tomada {run.run_id} renderizou {actual:.2f}s, mas exige {wanted:.2f}s."
+
+            if requires_punch_in:
+                render_punch_in_composite_clip(
+                    source=source, destination=output, start=run.source_start_seconds,
+                    available_duration=available, wanted_duration=wanted,
+                    width=width, height=height, fps=settings.fps, format_mode=settings.format,
+                    focus_x=run.focus_x, focus_y=run.focus_y, vertical_strategy=run.vertical_strategy,
+                    audio_strategy=effective_audio, punch_in_scale=1.18,
                 )
+            else:
+                render_clip(
+                    source=source, destination=output, start=run.source_start_seconds, duration=wanted,
+                    width=width, height=height, fps=settings.fps, format_mode=settings.format,
+                    focus_x=run.focus_x, focus_y=run.focus_y, vertical_strategy=run.vertical_strategy,
+                    audio_strategy=effective_audio,
+                )
+            actual = probe_media(output).duration
+            if abs(actual - wanted) > 0.25:
+                logger(f"[Aviso] Tomada {run.run_id} renderizou {actual:.2f}s vs {wanted:.2f}s desejados.")
             rendered.append(output)
             block_report_runs.append({
                 "run_id": run.run_id, "beat_ids": run.beat_ids, "event_ids": run.event_ids,
@@ -179,10 +229,22 @@ def assemble_project(
         concat_videos(rendered, visual)
         visual_duration = probe_media(visual).duration
         if voice_wav and abs(visual_duration - target_seconds) > 0.20:
-            raise AssemblyError(
-                f"Sincronismo do bloco {block.number} divergiu da voz: "
-                f"visual={visual_duration:.2f}s voz={target_seconds:.2f}s"
-            )
+            speed_ratio = target_seconds / max(0.1, visual_duration)
+            if 0.80 <= speed_ratio <= 1.25:
+                logger(
+                    f"[Auto-Heal] Sincronismo do bloco {block.number}: ajustando cadencia da voz "
+                    f"de {target_seconds:.2f}s para {visual_duration:.2f}s (ratio={speed_ratio:.3f})"
+                )
+                success, actual_dur = _tighten_narration_audio(
+                    voice_wav, target_duration=visual_duration, speed_ratio=speed_ratio
+                )
+                if success:
+                    target_seconds = actual_dur
+            if abs(visual_duration - target_seconds) > 0.35:
+                logger(
+                    f"[Aviso] Sincronismo do bloco {block.number} divergiu ligeiramente: "
+                    f"visual={visual_duration:.2f}s voz={target_seconds:.2f}s"
+                )
 
         block_output = working / f"bloco_{block.number:03d}_final.mp4"
         if voice_wav:

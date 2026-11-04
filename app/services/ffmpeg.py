@@ -257,15 +257,45 @@ def _video_filter(
     focus_x: float,
     focus_y: float,
     vertical_strategy: str,
+    punch_in_scale: float = 1.0,
 ) -> tuple[str, bool]:
     fx = max(0.0, min(1.0, focus_x))
     fy = max(0.0, min(1.0, focus_y))
+    crop_prefix = f"crop=iw/{punch_in_scale:.4f}:ih/{punch_in_scale:.4f}," if punch_in_scale > 1.01 else ""
     if format_mode != "short_9_16":
         vf = (
-            f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
+            f"{crop_prefix}scale={width}:{height}:force_original_aspect_ratio=decrease,"
             f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps={fps},format=yuv420p"
         )
         return vf, False
+
+    if vertical_strategy == "blur":
+        complex_filter = (
+            f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,"
+            f"crop={width}:{height}:"
+            f"x='max(0,min(iw-ow,iw*{fx:.4f}-ow/2))':"
+            f"y='max(0,min(ih-oh,ih*{fy:.4f}-oh/2))',"
+            "boxblur=20:8[bg];"
+            f"[0:v]{crop_prefix}scale={width}:{height}:force_original_aspect_ratio=decrease[fg];"
+            f"[bg][fg]overlay=(W-w)/2:(H-h)/2,setsar=1,fps={fps},format=yuv420p[v]"
+        )
+        return complex_filter, True
+
+    if vertical_strategy == "fit":
+        vf = (
+            f"{crop_prefix}scale={width}:{height}:force_original_aspect_ratio=decrease,"
+            f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps={fps},format=yuv420p"
+        )
+        return vf, False
+
+    vf = (
+        f"{crop_prefix}scale={width}:{height}:force_original_aspect_ratio=increase,"
+        f"crop={width}:{height}:"
+        f"x='max(0,min(iw-ow,iw*{fx:.4f}-ow/2))':"
+        f"y='max(0,min(ih-oh,ih*{fy:.4f}-oh/2))',"
+        f"setsar=1,fps={fps},format=yuv420p"
+    )
+    return vf, False
 
     if vertical_strategy == "blur":
         complex_filter = (
@@ -309,13 +339,14 @@ def render_clip(
     focus_y: float = 0.5,
     vertical_strategy: str = "crop",
     audio_strategy: str = "ambient",
+    punch_in_scale: float = 1.0,
 ) -> Path:
     destination.parent.mkdir(parents=True, exist_ok=True)
     info = probe_media(source)
     safe_start = max(0.0, start)
     safe_duration = max(0.15, min(duration, max(0.15, info.duration - safe_start)))
     filter_value, is_complex = _video_filter(
-        width, height, fps, format_mode, focus_x, focus_y, vertical_strategy
+        width, height, fps, format_mode, focus_x, focus_y, vertical_strategy, punch_in_scale=punch_in_scale
     )
     volume = {"mute": 0.0, "ambient": 0.12, "feature": 1.0}.get(audio_strategy, 0.12)
 
@@ -814,3 +845,68 @@ def apply_audio_tempo(input_wav: Path, output_wav: Path, tempo_factor: float) ->
         "-c:a", "pcm_s16le", str(output_wav),
     ])
     return output_wav
+
+
+def render_punch_in_composite_clip(
+    source: Path,
+    destination: Path,
+    start: float,
+    available_duration: float,
+    wanted_duration: float,
+    width: int,
+    height: int,
+    fps: int,
+    format_mode: str,
+    focus_x: float = 0.5,
+    focus_y: float = 0.5,
+    vertical_strategy: str = "crop",
+    audio_strategy: str = "ambient",
+    punch_in_scale: float = 1.18,
+) -> Path:
+    """Render a dynamic YouTube jump-cut punch-in composite clip when footage is shorter than narration."""
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    info = probe_media(source)
+    safe_start = max(0.0, start)
+    actual_available = max(0.15, min(available_duration, max(0.15, info.duration - safe_start)))
+
+    p1_dur = max(0.35, min(actual_available - 0.40, wanted_duration * 0.65))
+    p2_dur = max(0.20, wanted_duration - p1_dur)
+    p2_start = max(0.0, safe_start + actual_available - p2_dur)
+
+    tmp_a = destination.with_suffix(".punch_a.mp4")
+    tmp_b = destination.with_suffix(".punch_b.mp4")
+    try:
+        render_clip(
+            source=source,
+            destination=tmp_a,
+            start=safe_start,
+            duration=p1_dur,
+            width=width,
+            height=height,
+            fps=fps,
+            format_mode=format_mode,
+            focus_x=focus_x,
+            focus_y=focus_y,
+            vertical_strategy=vertical_strategy,
+            audio_strategy=audio_strategy,
+        )
+        render_clip(
+            source=source,
+            destination=tmp_b,
+            start=p2_start,
+            duration=p2_dur,
+            width=width,
+            height=height,
+            fps=fps,
+            format_mode=format_mode,
+            focus_x=focus_x,
+            focus_y=focus_y,
+            vertical_strategy=vertical_strategy,
+            audio_strategy=audio_strategy,
+            punch_in_scale=punch_in_scale,
+        )
+        concat_videos([tmp_a, tmp_b], destination)
+        return destination
+    finally:
+        tmp_a.unlink(missing_ok=True)
+        tmp_b.unlink(missing_ok=True)

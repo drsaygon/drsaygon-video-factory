@@ -36,13 +36,19 @@ VOICE_PROFILES_ROOT = (PACKAGE_ROOT / "voice_profiles").resolve()
 VOICE_PROFILES_ROOT.mkdir(parents=True, exist_ok=True)
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
-# Free-tier-first defaults. The app never enables billing or upgrades a Google project.
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite").strip()
-GEMINI_MODEL_FALLBACKS = [
+# Gemini 3.8 / 4 Multimodal Apex Architecture
+GEMINI_MODEL_PRIMARY = os.getenv("GEMINI_MODEL_PRIMARY", "gemini-3.8-flash").strip()
+GEMINI_MODEL_VISION = os.getenv("GEMINI_MODEL_VISION", "gemini-3.8-flash").strip()
+GEMINI_MODEL_REASONING = os.getenv("GEMINI_MODEL_REASONING", "gemini-3.8-flash").strip()
+GEMINI_FALLBACK_MODELS = [
     value.strip()
-    for value in os.getenv("GEMINI_MODEL_FALLBACKS", "gemini-2.5-flash").split(",")
+    for value in os.getenv("GEMINI_FALLBACK_MODELS", "gemini-3.8-flash,gemini-3.6-flash,gemini-3.5-flash-lite,gemini-2.5-flash").split(",")
     if value.strip()
 ]
+
+# Backward compatibility aliases
+GEMINI_MODEL = GEMINI_MODEL_PRIMARY
+GEMINI_MODEL_FALLBACKS = [m for m in GEMINI_FALLBACK_MODELS if m != GEMINI_MODEL_PRIMARY] or ["gemini-2.5-flash"]
 # Optional explicit precision model. If empty, the configured primary model is
 # tried first. The app never assumes that an older/newer model is available to
 # a specific API key/project.

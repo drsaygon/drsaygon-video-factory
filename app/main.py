@@ -453,6 +453,8 @@ def run_voice_generation(slug: str, block_number: int | None, request: VoiceGene
                 shutil.rmtree(candidate_dir)
             candidate_dir.mkdir(parents=True, exist_ok=True)
             spoken_text = apply_pronunciations(block.narration, profile.pronunciation_rules)
+            phonetic_source = getattr(block, "tts_phonetic_text", None)
+            phonetic_spoken = apply_pronunciations(phonetic_source, profile.pronunciation_rules) if phonetic_source else None
             metadata: list[dict[str, Any]] = []
             for candidate in range(1, request.candidates + 1):
                 done += 1
@@ -464,7 +466,10 @@ def run_voice_generation(slug: str, block_number: int | None, request: VoiceGene
                 seed = random.SystemRandom().randint(1000, 2_000_000_000)
                 output = candidate_dir / f"candidato_{candidate:02d}.wav"
                 raw_output = candidate_dir / f"candidato_{candidate:02d}_raw.wav"
-                info = generate_voice(spoken_text, embedding, raw_output, request.quality, seed)
+                info = generate_voice(
+                    spoken_text, embedding, raw_output, request.quality, seed,
+                    phonetic_text=phonetic_spoken,
+                )
                 normalize_voice_audio(raw_output, output)
                 raw_output.unlink(missing_ok=True)
                 duration = probe_audio_duration(output)

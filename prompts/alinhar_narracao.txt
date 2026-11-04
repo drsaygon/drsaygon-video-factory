@@ -24,3 +24,13 @@ REGRAS ANTI-ALUCINAÇÃO
 - Se uma expressão começa no final de uma frase e continua sem pausa, ainda assim estime a transição sonora real.
 - confidence representa sua confiança no alinhamento daquele trecho.
 - Nunca use timestamps fora de 0 até {duration_seconds}.
+
+REGRAS CRÍTICAS DE ORÇAMENTO DE TEMPO E PRONÚNCIA BILÍNGUE (v8.0):
+1. ORÇAMENTO RÍGIDO DE SÍLABAS POR TOMADA:
+   - Se uma tomada possui `duration_seconds` igual a D segundos, o texto da narração daquela tomada NUNCA deve ultrapassar `floor(D * 2.3)` palavras.
+   - Exemplo: para uma tomada de 8.41s, escreva no máximo 18 a 19 palavras (garantindo que a locução dure ~7.8s e sobre margem segura sem precisar esticar o clipe).
+
+2. CAMPO DUPLO PARA TERMOS EM INGLÊS (CODE-SWITCHING PT-BR + EN):
+   - Em cada segmento de cena, preencha:
+     * `narration_text`: Texto com a grafia técnica correta em inglês para exibição nas legendas (ex: "O DirectX Shader Compiler otimiza o pipeline de ray tracing na GPU.").
+     * `tts_phonetic_text`: O mesmo texto, porém com todas as palavras em inglês e siglas escritas foneticamente como um brasileiro pronuncia o inglês (ex: "O Dairéct Éks Xêider Compáiler otimiza o páip-láin de rêi trêissin na Gê-Pê-Ú.").
